@@ -50,7 +50,7 @@ FFPROBE = 'ffprobe'
 # width and a height.
 #
 # If the Clip and Window do not have identical width and height,
-# something must be done to rander that Clip within that Window.
+# something must be done to render that Clip within that Window.
 # 
 # For Clip objects, a DISPLAY_STYLE of:
 #
@@ -67,7 +67,7 @@ FFPROBE = 'ffprobe'
 #         to the largest size such that both its width and height are
 #         smaller than or equal to the width and height of the window
 #         it is placed in.  If the dimensions of the scaled Clip are
-#         smaller than the Window (whicih will be the case unless the
+#         smaller than the Window (which will be the case unless the
 #         Clip and Window have the same aspect ratio), the Clip will
 #         be padded onto the solid background of color pad_bgcolor set
 #         for the Display object.  The center of the Clip will be
@@ -84,9 +84,9 @@ FFPROBE = 'ffprobe'
 #         depend on whether the Clip is wider than the Window, or
 #         taller than the Window, the setting of the Display's
 #         pan_direction, and the pan direction of the prior clip in
-#         the case that pan_direction was ALTERANTE.
+#         the case that pan_direction was ALTERNATE.
 #
-# * OVERLAY - If the Display display_style is OVERLAY a comlpex
+# * OVERLAY - If the Display display_style is OVERLAY a complex
 #              behavior is created where clips are shrunk down to fill
 #              only a part of the window, and then animated to cascade
 #              across the window over the duration of their play time.
@@ -159,7 +159,7 @@ class Display( object ):
     hexadecimal "#RRGGBB" format.
 
     If display_style is PAN then the pan_direction can bet set to one
-    of UP/RIGHT or DOWND/LEFT or ALTERNATE, it defaults to ALTERNATE.
+    of UP/RIGHT or DOWN/LEFT or ALTERNATE, it defaults to ALTERNATE.
 
     If display_style is OVERLAY:
 
@@ -225,7 +225,7 @@ class Display( object ):
     # alternate pan_directions in that window.
     #
     # It also works for a given Clip, but that would require that
-    # sigle Clip be rendered at least twice in a given context.
+    # single Clip be rendered at least twice in a given context.
     def get_pan_direction( self ):
         if self.pan_direction == ALTERNATE:
             if self.prior_pan == UP:
@@ -252,7 +252,7 @@ class Video( object ):
     '''
 
     # Class static variable, whenever we get a new Video object we do
-    # some FFPROBE calls to find out meadata about that video, but we
+    # some FFPROBE calls to find out metadata about that video, but we
     # do it only once filesystem file no matter how many times the
     # object is created.
     #
@@ -277,7 +277,7 @@ class Video( object ):
             self.sample_aspect_ratio = Video.videos[filename]['sample_aspect_ratio']
             self.pix_fmt = Video.videos[filename]['pix_fmt']
         else:
-            # Collect file metadata with FFPRBE.
+            # Collect file metadata with FFPROBE.
             ( status, output ) = commands.getstatusoutput( "%s -v quiet -print_format json -show_format -show_streams %s" % ( FFPROBE, filename ) )
             info = json.loads( output )
             self.duration = float( info['format']['duration'] )
@@ -315,7 +315,7 @@ class Clip( object ):
       the source Video
     * end - If specified, the time in seconds this clip ends in the
       source Video, defaults to the end of the Video
-    * display - If specified, the Display settinsg this clip should be
+    * display - If specified, the Display settings this clip should be
       rendered with.  If not specified this clip will fall back to the
       default Display settings of the Window it is being rendered in.
 
@@ -327,7 +327,7 @@ class Clip( object ):
                   end                 = None,
                   display             = None ):
         if video is None:
-            raise Exception( "Clip consturctor requires a video argument." )
+            raise Exception( "Clip constructor requires a video argument." )
 
         self.video = video
         
@@ -345,7 +345,7 @@ class Clip( object ):
         if end is None:
             self.end = video.duration
         else:
-            # Technically this min is unecessary due to the exception
+            # Technically this min is unnecessary due to the exception
             # handling above, but it's here to clarify the valid
             # values.
             self.end = min( float( end ), video.duration )
@@ -372,10 +372,128 @@ class Window( object ):
 
     A Window composes an arbitrary number of other Window and Clip
     objects into a final video (and also maybe some images, sound
-    files, watermarks, etc.)
+    files, watermarks, etc.).  Windows can contain Windows which
+    contain Windows etc.
+
+    Constructor arguments:
+
+    * windows - Optional list of other Window objects which are
+      children to this Window (may be manipulated after construction
+      by explicitly settings the .windows attribute on the returned
+      object).
+
+    * clips - Option list of Clip objects to be rendered in this
+      Window (may be manipulated after construction by explicitly
+      setting the .clips attribute of the returned object).
+
+    * display - An optional Display object to define how Clips should
+      be rendered in this window (overridden on a Clip by Clip basis
+      of their display argument).  Defaults to the default Display()
+      object.
+
+    * force - Defaults to False, force regeneration of all video
+      content, ignoring what is in the cache.
+
+    * bgcolor - Defaults to 'Black'.  In a variety of scenarios where
+      there is no Clip or image content in a region of a Window, what
+      color should that region be.
+
+    * bgimage_file - Defaults to None.  In a variety of scenarios
+      where there are no Clips content in a region of the Window, what
+      should be shown instead.
+
+    * width - Defaults to 1280.  Width in pixels of this Window.
+
+    * height - Defaults to 720.  Height in pixels of this Window.
+
+    * x - Defaults to 0.  The x coordinate of the top left pixel of
+      this Window within its immediate parent Window, if any, as
+      measured from the top left.
+
+    * y - Defaults to 0.  The y coordinate of the top left pixel of
+      this Window within its immediate parent Window, if any, as
+      measured from the top left.
+
+    * audio_filename. Optional.  If specified, an audio track to play
+      along with the resultant video.
+
+    * audio_desc.  Optional.  If provided, text to display over the
+      end of the video for the last 5 seconds.
+
+    * duration - Optional. If specified the duration of the rendered
+      content of this Window.  Defaults to the length of the optional
+      audio_filename, or if that is not provided then defaults to the
+      maximum duration of the rendered clips of this or any child
+      windows.  If the specified duration is shorter than the content
+      of clips some clips will not be shown.  If it is longer there
+      will be blank content at the end of the clips.  If the duration
+      and the length of the audio_file differ, then the audion file
+      will fade out starting 5 seconds before the end of the video.
+
+    * output_file - Defaults to "./output.mp4" where the resulting
+      video from a call to render this Window will be created.
+
+    * z_index - Optional.  If there are muliple windows being
+      rendered, ones with higher z_indexes are rendered on top of
+      others.  If two windows have the same z_index which one ends up
+      on top is arbitrary.  If not specified windows will have
+      increasing z_index in order of creation.
+
+    * watermarks - Optional.  A list of Watermark image objects to
+      overlay on top of the resultant video.
+
+    * sample_aspect_ratio - Optional. The Sample Aspect Ratio (SAR)
+      for the rendered content of this Window.  If specified, it must
+      be in "W:H" format.  This should not be needed generally unless
+      you are encoding for TV broadcast or similar.  Defautls to the
+      SAR if the input Video, or 1:1 if there is no input Video.  If
+      multiple input videos have different SARs an Exception is
+      thrown, you must preprocess your inputs to all have the same
+      SAR.
+
+    * pix_fmt - Optional.  The pixel format of this window, defaults
+      to yuv420p.  All Windows that are rendered together must have
+      the same pix_fmt.
+
+    * overlay_batch_concurrency - Optional.  Defaults to 16.  An
+      internal paramter that controls how many overlays we will
+      attempt in one command line for FFMPEG.  Increasing this value
+      may cause crashes and memory corruption errors, setting it lower
+      increases rendering time.
+
+    
+
+    
+    NOTE: Window objects cache data both within and across program
+    invocations.  Broadly this saves a ton of compute time by not
+    re-transcoding Clips whose results can't change, but can result in
+    the wrong stuff if there are collisions in the cache.
+    
+    If two Clips have the same elements here, they are assumed to be
+    the same in the Cache:
+    * Absolute path to the filename from the undelying Video object
+    * Clip start time
+    * Clip end time
+    * The dislpay_style of the Clip as being rendered in this Window.
+    * Clip width
+    * Clip height
+    * Window pan_direction (only relevant if display_style is PAN and pan_direction is ALTERNATE)
+    * The pixel format of this Window
+
+    If the Cache is incorrect (most likely because the underlying
+    contents of an input filename have changed), the cache should be
+    cleared by calilng the static clear_cache method of the Window
+    class:
+
+    Window.clear_cache()
 
     '''
+
+    # We use z-index to determine what Windows go on top of others.
+    # Users can specify their own z_indexes, but if they don't we
+    # increment in order of created Window objects.
     z = 0
+
     tmpdir = '/tmp/vsum/%s/' % ( getpass.getuser() )
     cache_dict_file = 'cachedb'
     cache_dict = {}
@@ -389,10 +507,14 @@ class Window( object ):
                 os.makedirs( tmpdir )
                 Window.tmpdir = tmpdir
             except Exception as e:
-                raise( "Error creting tmpdir: %s, error was: %s" % ( tmpdir, e ) )
+                raise( "Error creating tmpdir: %s, error was: %s" % ( tmpdir, e ) )
 
     @staticmethod
     def load_cache_dict():
+        '''If a given Clip is reused across several program invocations, we
+        save time by not recreating it.  We store information about
+        what Clips we have around here.
+        '''
         if os.path.exists( "%s/%s" % ( Window.tmpdir, Window.cache_dict_file ) ):
             f = open( "%s/%s" % ( Window.tmpdir, Window.cache_dict_file ), 'r' )
             Window.cache_dict = pickle.load( f )
@@ -404,6 +526,10 @@ class Window( object ):
 
     @staticmethod
     def save_cache_dict():
+        '''If a given Clip is reused across several program invocations, we
+        save time by not recreating it.  We store information about
+        what Clips we have around here.
+        '''
         if not os.path.isdir( Window.tmpdir ):
             os.makedirs( Window.tmpdir )
 
@@ -413,6 +539,9 @@ class Window( object ):
     
     @staticmethod
     def clear_cache():
+        '''Try to remove all the files in the tmpdir.  This is necessary if,
+        for example, an input Video filename has new contents.
+        '''
         if os.path.isdir( Window.tmpdir ):
             for cache_file in glob.glob( "%s/*" % ( Window.tmpdir ) ):
                 try:
@@ -420,6 +549,7 @@ class Window( object ):
                 except Exception as e:
                     raise Exception( "Error while deleting file %s: %s" % ( cache_file, e ) )
 
+    ### Window method ########################################
     def __init__( self,
                   windows = None,
                   clips = None,
@@ -452,7 +582,10 @@ class Window( object ):
                   y = 0,
                   duration = None, # The total rendered duration,
                                    # defaults to that of the audio
-                                   # track. Short values may lead to
+                                   # track if provided, and the
+                                   # maximum rendered Clip duration of
+                                   # this or any child Window
+                                   # objects. Short values may lead to
                                    # some clips never being visible,
                                    # long values may lead to empty
                                    # screen once all clips have been
@@ -506,6 +639,9 @@ class Window( object ):
         self.x        = x
         self.y        = y
 
+
+        # If the user doesn't provide z_indexes for this Window, we
+        # create them in order that Windows are created.
         if z_index is not None:
             self.z_index = z_index
         else:
@@ -533,6 +669,10 @@ class Window( object ):
 
         self.audio_desc = audio_desc
 
+        # Later on, when we render things, duration will get set to
+        # the maximum of the rendered Clip durations of this or any
+        # child windows unless it has been explicitly set here, or
+        # implicitly set here by the audio_duration.
         if duration is None:
             if audio_filename is not None:
                 self.duration = self.audio_duration
@@ -541,6 +681,8 @@ class Window( object ):
         else:
             self.duration = duration
 
+
+        # Individual Clip objects can override these Dislpay settings.
         if display is not None:
             self.display = display
         else:
@@ -555,7 +697,17 @@ class Window( object ):
 
         self.force = force               
     
+
+    ### Window method ########################################
     def get_display( self, clip ):
+        '''Internal utility function to get the Display properties for this
+        Clip being rendered in this Window.  The logic is:
+
+        1. If the Clip was created with a Display object, use that.
+        2. Otherwise, if the Window was created with a Display object, use that.
+        3. Otherwise, use the default Display object.
+
+        '''
         if clip.display is not None:
             return clip.display
         elif self.display is not None:
@@ -563,17 +715,35 @@ class Window( object ):
         else:
             return Display()
 
+
+    ### Window method ########################################
     def get_next_renderfile( self ):
+        '''Internal utility function, we need to generate a bunch of
+        intermediate files, this generates unique names for them.
+
+        '''
         return "%s/%s.mp4" % ( Window.tmpdir, str( uuid.uuid4() ) )
 
+
+    ### Window method ########################################
     def render( self, helper=False ):
+        '''If helper is true we're rendering a sub-window, the result of which
+        is an intermediate file stored in the tmpdir somewhere.  If
+        helper is False then we are rendering user output, and it will
+        go in the path specified by self.output_file.
+
+        '''
+
         # File to accumulate things in.
         tmpfile = None
 
         child_windows = [ w for w in self.get_child_windows() ]
         all_windows = [ self ] + child_windows
+
+        ###### SAR stuff #####################################
+        # Determine the output SAR for this video, or raise an
+        # Exception if the inputs have mismatched SARs.
         sars = set( [ clip.get_sar() for window in all_windows if window.sample_aspect_ratio is None for clip in window.clips ] + [ w.sample_aspect_ratio for w in all_windows if w.sample_aspect_ratio is not None ] )
-        
         computed_sar = None
         if len( sars ) > 1:
             raise Exception( "Multiple different sample aspect ratios present in input videos: %s.  Please preprocess your inputs to all have the same SARs." % ( sars ) )
@@ -585,6 +755,9 @@ class Window( object ):
                 self.sample_aspect_ratio = computed_sar
         else:
             if computed_sar is not None and computed_sar != self.sample_aspect_ratio:
+                # It's OK to mismatch these things, but usually it
+                # will be an error that stretches the video by the
+                # ratio of the input over the output SAR.
                 print "WARNING: input videos/child windows have SAR of %s, but the output SAR of %s has been specified, this may result in distorted output." % ( computed_sar, self.sample_aspect_ratio )
 
         sar_clause = ""
@@ -593,6 +766,7 @@ class Window( object ):
             ( sarwidth, sarheight ) = self.sample_aspect_ratio.split( ':' )
             sar_clause = ",setsar=sar=%s/%s" % ( sarwidth, sarheight )
 
+        ###### Pixel Format stuff #############################
         pix_fmts = set( [ w.pix_fmt for w in all_windows if w.pix_fmt is not None ] )
 
         computed_pix_fmt = None
@@ -605,7 +779,8 @@ class Window( object ):
             self.pix_fmt = computed_pix_fmt
         else:
             self.pix_fmt = 'yuv420p'
-
+        
+        ###### Duration stuff ################################
         if self.duration is None:
             my_duration = max( [ w.compute_duration( w.clips ) for w in all_windows ] )
             if my_duration == 0:
@@ -614,20 +789,21 @@ class Window( object ):
                 print "WARNING: No duration specified for window, set duration to %s, the longest duration of clips in this or any of its child windows." % ( my_duration )
                 self.duration = my_duration
 
+        ###### Background stuff ##############################
         # Lay down a background if requested to.
         if self.bgimage_file is not None:
             tmpfile = self.get_next_renderfile()
-            cmd = '%s -y -loop 1 -i %s -pix_fmt %s -r 30000/1001 -qp 18 -filter_complex " color=%s:size=%dx%d [base] ; [base] [0] overlay%s " -t %f %s' % ( FFMPEG, self.bgimage_file, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, tmpfile )
+            cmd = '%s -y -loop 1 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -filter_complex " color=%s:size=%dx%d [base] ; [base] [0] overlay%s " -t %f %s' % ( FFMPEG, self.bgimage_file, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
             if status != 0 or not os.path.exists( tmpfile ):
-                raise Exception( "Error producing solid background file %s with command: %s" % ( tmpfile, cmd ) )
+                raise Exception( "Error producing background image video file %s with command: %s" % ( tmpfile, cmd ) )
 
         # Handle the case where there are no clips and no background.
         if len( self.clips ) == 0 and self.bgimage_file is None:
             tmpfile = self.get_next_renderfile()
-            cmd = '%s -y -pix_fmt %s -r 30000/1001 -qp 18 -filter_complex " color=%s:size=%dx%d%s " -t %f %s' % ( FFMPEG, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, tmpfile )
+            cmd = '%s -y -pix_fmt %s -r 30000/1001 -crf 16 -filter_complex " color=%s:size=%dx%d%s " -t %f %s' % ( FFMPEG, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -636,29 +812,33 @@ class Window( object ):
         else:
             tmpfile = self.render_clips( self.clips, tmpfile )
 
+        ###### Render All Child Windows ######################
         for window in sorted( self.windows, key=lambda x: x.z_index ):
             if window.duration is None:
                 window.duration = self.duration
             if window.pix_fmt is None:
                 window.pix_fmt = self.pix_fmt
+
             current = tmpfile
             window_file = window.render( helper=True )
             tmpfile = self.get_next_renderfile()
             
             # WITH AUDIO
-            #cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -qp 18 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -a:c libfdk_aac -t %f %s' % ( FFMPEG, current, window_file, self.pix_fmt, window.x, window.y, sar_clause, self.duration, tmpfile )
+            #cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -a:c libfdk_aac -t %f %s' % ( FFMPEG, current, window_file, self.pix_fmt, window.x, window.y, sar_clause, self.duration, tmpfile )
             # WITHOUT AUDIO
-            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -qp 18 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -t %f %s' % ( FFMPEG, current, window_file, self.pix_fmt, window.x, window.y, sar_clause, self.duration, tmpfile )
-            #cmd = '%s -y -i %s -i %s -r 30000/1001 -qp 18 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s " -t %f %s' % ( FFMPEG, current, window_file, window.x, window.y, self.duration, tmpfile )
+            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -t %f %s' % ( FFMPEG, current, window_file, self.pix_fmt, window.x, window.y, sar_clause, self.duration, tmpfile )
+
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
             if status != 0 or not os.path.exists( tmpfile ):
                 raise Exception( "Error applying overlay window %s to file %s with command: %s" % ( window_file, current, cmd ) )
-
+                
+        ###### Render Watermarks #############################
         if len( self.watermarks ) > 0:
             tmpfile = self.add_watermarks( self.watermarks, tmpfile )
 
+        ###### Add Audio and Description #####################
         if self.audio_filename:
             if self.audio_duration is not None and self.audio_duration == self.duration:
                 audio_fade_start = self.duration
@@ -667,15 +847,19 @@ class Window( object ):
                 audio_fade_start = max( 0, self.duration - 5 )
                 audio_fade_duration = self.duration - audio_fade_start
             afade_clause = ' -c:a libfdk_aac -af "afade=t=out:st=%f:d=%f" ' % ( audio_fade_start, audio_fade_duration )
+
             current = tmpfile
             tmpfile = self.get_next_renderfile()
+
             filter_clause = ' -vf copy '
+
             if self.audio_desc:
                 audio_desc_file = '%s/%s.txt' % ( Window.tmpdir, str( uuid.uuid4() ) )
                 f = open( audio_desc_file, 'w' )
                 f.write( self.audio_desc )
                 f.close()
                 filter_clause = " -filter_complex 'drawtext=fontcolor=white:borderw=1:textfile=%s:x=10:y=h-th-10:enable=gt(t\,%f)'%s" % ( audio_desc_file, self.duration - 5, sar_clause )
+
             cmd = '%s -y -i %s -i %s -pix_fmt %s %s %s -t %f %s' % ( FFMPEG, current, self.audio_filename, self.pix_fmt, afade_clause, filter_clause, self.duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
@@ -683,14 +867,14 @@ class Window( object ):
             if status != 0 or not os.path.exists( tmpfile ):
                 raise Exception( "Error adding audio %s to file %s with command: %s" % ( self.audio_filename, current, cmd ) )
 
-        # DEBUG - here it would be nice to detect if the thing had an
-        # audio stream and/or respond to command line arguments to
-        # that effect.
-
         if not helper:
             shutil.copyfile( tmpfile, self.output_file )
+
+        # Render returns the path of the file it generated.
         return tmpfile
 
+
+    ### Window method ########################################
     def add_watermarks( self, watermarks, current ):
         cmd = '%s -y -i %s ' % ( FFMPEG, current )
 
@@ -757,7 +941,15 @@ class Window( object ):
 
         return tmpfile
 
+
+    ### Window method ########################################
     def get_clip_hash( self, clip, width, height, pan_direction="", pix_fmt="yuv420p" ):
+        '''It can be very time consuming to produce a clip from a video, we
+        endeavor here to not do the same work over and over if it's
+        not needed.
+
+        '''
+
         display = self.get_display( clip )
         clip_name = "%s%s%s%s%s%s%s%s" % ( os.path.abspath( clip.video.filename ), 
                                            clip.start, 
@@ -771,16 +963,29 @@ class Window( object ):
         md5.update( clip_name )
         return md5.hexdigest()
 
+
+    ### Window method ########################################
     def render_clips( self, clips, tmpfile ):
-        # For each clip we:
-        #
-        # 1. Check in our cache to see if we already have a version of
-        # this clip in the appropriate resolution.
-        #
-        # 2. If there is a cache miss, produce a clip of the
-        # appropriate resolution and cache it.
-        #
-        # 3. Concatenate all the resulting clips.
+        '''For each clip we:
+        
+        1. Check in our cache to see if we already have a version of
+        this clip in the appropriate resolution.
+        
+        2. If there is a cache miss, produce a clip of the appropriate
+        resolution and cache it.
+        
+        3. Concatenate and overlay the following clips according to
+        this procedure:
+
+        We process the Clips in order in self.clips.
+
+        For Clips whose display_style is not OVERLAY, we append them
+        onto one another.
+
+        If we encounter clips whose display_style is OVERLAY, we begin
+        layering them on top of the current Clip (if any, perhaps it's
+        just a background color or image).
+        '''
 
         if len( clips ) == 0:
             # Nothing to do.
@@ -809,9 +1014,9 @@ class Window( object ):
                 f.write( "file '%s'\n" % ( clip_file ))
             f.close()
             if self.original_audio:
-                cmd = "%s -y -f concat -i %s -pix_fmt %s -r 30000/1001 -qp 18 -c:a libfdk_aac %s" % ( FFMPEG, concat_file, self.pix_fmt, tmpfile )
+                cmd = "%s -y -f concat -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:a libfdk_aac %s" % ( FFMPEG, concat_file, self.pix_fmt, tmpfile )
             else:
-                cmd = "%s -y -f concat -i %s -pix_fmt %s -r 30000/1001 -qp 18 -an %s" % ( FFMPEG, concat_file, self.pix_fmt, tmpfile )
+                cmd = "%s -y -f concat -i %s -pix_fmt %s -r 30000/1001 -crf 16 -an %s" % ( FFMPEG, concat_file, self.pix_fmt, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -821,7 +1026,7 @@ class Window( object ):
             # All the clips are overlays and we have no background.
             duration = self.compute_duration( self.clips )
             tmpfile = self.get_next_renderfile()
-            cmd = '%s -y -pix_fmt %s -r 30000/1001 -qp 18 -filter_complex " color=%s:size=%dx%d " -t %f %s' % ( FFMPEG, self.pix_fmt, self.bgcolor, self.width, self.height, duration, tmpfile )
+            cmd = '%s -y -pix_fmt %s -r 30000/1001 -crf 16 -filter_complex " color=%s:size=%dx%d " -t %f %s' % ( FFMPEG, self.pix_fmt, self.bgcolor, self.width, self.height, duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -833,7 +1038,7 @@ class Window( object ):
         ( duration, overlay_timing ) = self.compute_duration( clips, include_overlay_timing=True )
 
         # DEBUG
-        # THIS IS A HACK TO ACCOMODATE A SINGLE UNDERLYING BASE CLIP.
+        # THIS IS A HACK TO ACCOMMODATE A SINGLE UNDERLYING BASE CLIP.
         #overlay_mod = - ( self.compute_duration( [ clips[0] ] ) - 8 )
         #overlay_timing = [ ( x[0] + overlay_mod, x[1] + overlay_mod ) for x in overlay_timing ]
         # BRUTAL HACK TO GET THE FIRST CLIP TO DO WHAT I WANT!!!
@@ -844,7 +1049,7 @@ class Window( object ):
             cmd = "%s -y -i %s " % ( FFMPEG, tmpfile )
             include_clause = ""
             scale_clause = ""
-            filter_complex = ' -pix_fmt %s -r 30001/1001 -qp 18 -filter_complex " ' % ( self.pix_fmt )
+            filter_complex = ' -pix_fmt %s -r 30001/1001 -crf 16 -filter_complex " ' % ( self.pix_fmt )
             for overlay_idx in range( overlay_group, min( len( overlays ), overlay_group + self.overlay_batch_concurrency ) ):
                 overlay_start = overlay_timing[overlay_idx][0]
                 overlay_end = overlay_timing[overlay_idx][1]
@@ -892,6 +1097,8 @@ class Window( object ):
 
         return tmpfile
 
+
+    ### Window method ########################################
     def clip_render( self, clip ):
         display = self.get_display( clip )
 
@@ -956,14 +1163,14 @@ class Window( object ):
 
                 # NOTE: This logic does not allow both x and y
                 # panning, additional stuff would be required to get
-                # the : seperators right in the pan clause if both
+                # the : separators right in the pan clause if both
                 # could be present.
                 pan_clause = ":%s%s" % ( xpan, ypan )
 
             scale_clause += 'crop=w=%d:h=%d%s' % ( self.width, self.height, pan_clause )
 
         elif display.display_style == OVERLAY:
-            # Ovarlays will be scaled at the time the overlay is
+            # Overlays will be scaled at the time the overlay is
             # applied so we can reuse the same clips at different
             # scales.
             scale_clause = ""
@@ -989,9 +1196,9 @@ class Window( object ):
             filename = "%s/%s.mp4" % ( Window.tmpdir, clip_hash )
             
             if self.original_audio:
-                cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -qp 18 -c:a libfdk_aac %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )
+                cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:a libfdk_aac %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )
             else:
-                cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -qp 18 -an %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )               
+                cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -crf 16 -an %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )               
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -1003,6 +1210,8 @@ class Window( object ):
 
         return filename
 
+
+    ### Window method ########################################
     def get_pan_clause( self, clip, direction, c, w ):
         duration = clip.get_duration()
         pan_clause = ''
@@ -1017,6 +1226,8 @@ class Window( object ):
             
         return pan_clause
 
+
+    ### Window method ########################################
     def get_output_dimensions( self, cw, ch, ww, wh, operator ):
         scale = operator( float( ww ) / cw, float( wh ) / ch )
         ow = int( cw * scale )
@@ -1037,6 +1248,8 @@ class Window( object ):
 
         return ( scale, ow, oh )
 
+
+    ### Window method ########################################
     def compute_duration( self, clips, include_overlay_timing=False ):
         '''Don't actually do anything, just report how long the clips will
         take to render in this window.
@@ -1109,6 +1322,8 @@ class Window( object ):
         else:
             return duration
 
+
+    ### Window method ########################################
     def get_child_windows( self, include_self=False ):
         '''Recursively get the list of all child windows.'''
 
@@ -1117,8 +1332,8 @@ class Window( object ):
             objects onto a single list.'''
 
             for el in l:
-                if isinstance(el, collections.Iterable) and not isinstance(el, basestring):
-                    for sub in flatten(el):
+                if isinstance( el, collections.Iterable ) and not isinstance( el, basestring ):
+                    for sub in flatten( el ):
                         yield sub
                 else:
                     yield el
@@ -1181,7 +1396,7 @@ def distribute_clips( clips, windows, min_duration=None, randomize_clips=False )
 
     Input/Output parameters: 
 
-    * windows - A list of vsum.Window objects to distribut the clips
+    * windows - A list of vsum.Window objects to distribute the clips
       among.  These Window objects are modified by having whatever
       clips this function determines to send to them added to the end
       of their clips list.
@@ -1195,7 +1410,7 @@ def distribute_clips( clips, windows, min_duration=None, randomize_clips=False )
       a function of the resulting length within each window.
       
     NOTE: If min_duration is set, once it is obtained no more clips
-    will be added to the result, and some input clips mayu be unusued
+    will be added to the result, and some input clips may be unused
     in that scenario.
 
     * randomize_clips - If true the input clips array will have it's
@@ -1235,7 +1450,7 @@ def distribute_clips( clips, windows, min_duration=None, randomize_clips=False )
     the first window such that both:
         * ( window_duration + clip_duration ) <= 1.2*( minimum_window_duration + clip_duration )
         * and, if min_duration is set:
-        * windor_duration < min_duration
+        * window_duration < min_duration
 
     '''
 
@@ -1250,7 +1465,7 @@ def distribute_clips( clips, windows, min_duration=None, randomize_clips=False )
                                'ar'       : ar,
                                'duration' : duration } )
 
-    # Internal only function to do the recusrive work of parseling out
+    # Internal only function to do the recursive work of parseling out
     # things.
     def add_clips_helper():
         if randomize_clips:
@@ -1337,7 +1552,7 @@ def get_solid_clip( duration,
 
 if __name__ == '__main__':
     ''' Example usage:
-    # Set some diplay properties.
+    # Set some display properties.
     d = Display( display_style = PAN )
 
     # If the cache might be bad, we can clean it out.
@@ -1390,7 +1605,7 @@ if __name__ == '__main__':
     w0.output_file = 'output1.mp4'
     w0.render()
 
-    # Automatically distribute clips amongst windows..
+    # Automatically distribute clips among windows..
     distribute_clips( [ c1, c2, c3, c8, cx, c4, c5, c6, c7 ], [ w1, w2, w3, w4 ], w0.duration )
     w0.output_file = 'output2.mp4'
     w0.render()
