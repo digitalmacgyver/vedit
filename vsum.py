@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+'''Utility for extracting clips from videos, and composing clips
+together into arbitrary nested "windows" in an output.'''
+
 import collections
 import commands
 import getpass
@@ -13,159 +16,193 @@ import re
 import shutil
 import uuid
 
+################################################################################
+################################################################################
+################################################################################
+# Configuration settings.
+################################################################################
+################################################################################
+################################################################################
+
+
+# The FFMPEG command to use, this will use whatever is in the path.
+#
+# This module requires the ffmpeg binary from the FFmpeg project at
+# https://ffmpeg.org/
+#
+# The ffmpeg binary that for a short time was published by the libav
+# project is not supported.
+#
+# If the path where this script is run does not have these binaries,
+# the full path to them can be updated here.
 FFMPEG = 'ffmpeg'
-#FFMPEG = '/home/viblio/ffmpeg/git/ffmpeg/ffmpeg'
+FFPROBE = 'ffprobe'
 
-def distribute_clips( clips, windows, min_duration=None, randomize_clips=False ):
-    '''Distribute clips to windows.
-    
-    This attempts to place clips in the window whose aspect ratio is a
-    close match for the clip, while also balancing the total content
-    duration of the clips in the windows (note: this can be different
-    from the total duration of the rendered window when cascading
-    clips are used).
-
-    If min_duration is != None, then the clips will continually be
-    recycled until the min_duration is met.
-    '''
-
-    if len( clips ) == 0:
-        return
-
-    window_stats = []
-    for window in windows:
-        ar = float( window.width ) / window.height
-        duration = 0
-        window_stats.append( { 'window'   : window,
-                               'ar'       : ar,
-                               'duration' : duration } )
-
-    def add_clips_helper():
-        if randomize_clips:
-            random.shuffle( clips )
-        for clip in clips:
-            ar = float( clip.video.width ) / clip.video.height
-            duration = clip.get_duration()
-
-            window_durations = [ x.compute_duration( x.clips ) for x in windows ]
-            min_window_duration = min( window_durations )
-
-            # Sort candidate windows by increasing AR match and then by increasing duration.
-            window_stats.sort( key=lambda x: ( abs( x['ar'] - ar ), x['duration'] ) )
-        
-            # Find a window to add this clip to, while maintaining this
-            # constraint:
-            #
-            # Find the first window sorted by closest aspect ratio and
-            # then duration so long as adding this clip to the window so
-            # long as:
-            # window.duration + clip.duration > 2*(min_window_duration + clip.duration)
-            # window.duration < min_duration
-            clip_added = False
-            for window in window_stats:
-                if ( window['duration'] + duration ) <= 1.2*( min_window_duration + duration ):
-                    if min_duration is None or window['duration'] < min_duration:
-                        window['window'].clips.append( clip )
-                        window['duration'] = window['window'].compute_duration( window['window'].clips )
-                        clip_added = True
-                        break
-                  
-            if not clip_added and min_duration is None:
-                raise Exception( "Failed to place clip in a window." )
-
-    if min_duration is None:
-        add_clips_helper()
-    else:
-        add_clips_helper()
-        window_durations = [ x.compute_duration( x.clips ) for x in windows ]
-        while min( window_durations ) < min_duration:
-            add_clips_helper()
-            window_durations = [ x.compute_duration( x.clips ) for x in windows ]
-
-def get_solid_clip( duration,
-                    width   = 1280,
-                    height  = 720,
-                    bgcolor = 'Black',
-                    bgimage_file = None ):
-    '''Create a clip of a solid color of a particular duration and size.
-    Default color is black, default size is 1280x720. Returns the
-    path of the clip.
-    '''
-    
-    #ffmpeg -f lavfi -i aevalsrc=0 -i video.mov -shortest -c:v copy -c:a aac \
-    #                              -strict experimental output.mov
-    #ffmpeg -f lavfi -i aevalsrc=0:0:0:0:0:0::duration=1 silence.ac3
-
-
-    w = Window( duration = duration,
-                width    = width,
-                height   = height,
-                bgcolor  = bgcolor,
-                bgimage_file = bgimage_file )
-    
-    return w.render()
-
-
-# Some constants
-
-# Clip display styles.
+# "Constant" Clip display styles.
+#
+# Do not change these.
+#
+#
+# These DISPLAY_STYPES are used to configure Display objects, which in
+# turn define how Clip objects behave when embedded in a Window.
+# 
+# Each Clip has a pixel width and a height, and each Window has a
+# width and a height.
+#
+# If the Clip and Window do not have identical width and height,
+# something must be done to rander that Clip within that Window.
+# 
+# For Clip objects, a DISPLAY_STYLE of:
+#
+# * CROP - The Clip is scaled in size while preserving its aspect
+#          ratio to the smallest size such that both its width and
+#          height meet or exceed the width and height of the Window it
+#          is placed in. If any portion of the resulting scaled Clip
+#          is larger than the Window (which will be the case unless
+#          the Clip and Window have the same aspect ratio), the Clip
+#          will be cropped.  The center of the Clip will be placed at
+#          the center of the Window.
+#
+# * PAD - The Clip is scaled in size while preserving its aspect ratio
+#         to the largest size such that both its width and height are
+#         smaller than or equal to the width and height of the window
+#         it is placed in.  If the dimensions of the scaled Clip are
+#         smaller than the Window (whicih will be the case unless the
+#         Clip and Window have the same aspect ratio), the Clip will
+#         be padded onto the solid background of color pad_bgcolor set
+#         for the Display object.  The center of the Clip will be
+#         placed at the center of the Window.
+#
+# * PAN - The Clip is scaled in size while preserving its aspect ratio
+#         to the smallest size such that both its width and height
+#         meet or exceed the width and height of the Window it is
+#         placed in.  If any portion of the resulting scaled Clip is
+#         larger than the Window (which will be the case unless the
+#         Clip and Window have the same aspect ratio), then as the
+#         clip plays it will be animated panning to show the entire
+#         clip as the clip plays.  The direction the clip is panned
+#         depend on whether the Clip is wider than the Window, or
+#         taller than the Window, the setting of the Display's
+#         pan_direction, and the pan direction of the prior clip in
+#         the case that pan_direction was ALTERANTE.
+#
+# * OVERLAY - If the Display display_style is OVERLAY a comlpex
+#              behavior is created where clips are shrunk down to fill
+#              only a part of the window, and then animated to cascade
+#              across the window over the duration of their play time.
+#              The OVERLAY mode has lots of additional behaviors, in
+#              part dictated by he various OVERLAY_DIRECTIONS
 OVERLAY   = "overlay"
 CROP      = "crop"
 PAD       = "pad"
 PAN       = "pan"
 DISPLAY_STYLES = [ OVERLAY, CROP, PAD, PAN ]
 
-# Overlay and pan directions directions
+# "Constant" clip overlay and pan values.
+#
+# Do not change these. 
+#
+# For the Display display_style of OVERLAY, then DOWN, LEFT, RIGHT, UP
+# controls which direction the clip is animated moving over it's
+# runtime.
 DOWN      = "down"  # Down and right are synonyms for pan directions.
 LEFT      = "left"  # Left and up are synonyms for pan directions.
 RIGHT     = "right" 
 UP        = "up"    
 OVERLAY_DIRECTIONS = [ DOWN, LEFT, RIGHT, UP ]
 
-# Pan directions
+# Constant clip pan values.
+#
+# Do not change these
+#
+# For the Display display_style of PAN, then DOWN/RIGHT and or UP/LEFT
+# dictate the direction to pan (which of these is in effect depends on
+# whether the Clip is wider, or taller, than the Window it is placed
+# in.
+#
+# For the PAN display_style, if the Clip's pan_direction is ALTERNATE,
+# then it will pan in the opposite direction of the prior clip than
+# panned in the same window.
+#
 ALTERNATE = "alternate"
 PAN_DIRECTIONS = [ ALTERNATE, DOWN, UP ]
 
+
+################################################################################
+################################################################################
+################################################################################
+# Classes for rendering videos.
+################################################################################
+################################################################################
+################################################################################
+
+
+################################################################################
 class Display( object ):
+    '''Display objects allow for the configuration of how a Clip should
+    be displayed.
+
+    Whenever a Clip is rendered, it is rendered with the following
+    Display settings:
+    * If the Clip itself has a Display object, those settings are used.
+    * Otherwise, if the Window the Clip is being rendered in has a Display object, those settings are used.
+    * Otherwise, the default Display settings are used.
+
+    The default Display settings are:
+    * display_style = PAD
+    * pad_bgcolor = 'Black'
+
+    The display_style may be set to one of CROP, PAD, PAN, or OVERLAY.
+
+    If display_style is PAD, the pad_bgcolor may be set to any of the
+    colors named recognized by the 'ffmpeg -colors' or a RGB code in
+    hexadecimal "#RRGGBB" format.
+
+    If display_style is PAN then the pan_direction can bet set to one
+    of UP/RIGHT or DOWND/LEFT or ALTERNATE, it defaults to ALTERNATE.
+
+    If display_style is OVERLAY:
+
+    * overlay_direction can be one of LEFT/RIGHT/UP/DOWN and the
+      overlay_concurrency may be set.  overlay_concurrency is roughly
+      how many clips can be on the screen at the same time during
+      overlays.  Defaults to DOWN.
+
+    * overlay_concurrency lists the maximum number of clips that can
+      be actively cascading at one time.  Defaults to 3.
+
+    * overlay_min_gap lists the minimum duration between when two
+      clips may be started to animate. Defaults to 4 seconds.
+
+    NOTE: If overlay_min_gap is high relative to the length of videos,
+    there will be times when nothing is cascading and/or there are
+    fewer than overlay_concurrency clips cascading.
+    '''
+
     def __init__( self, 
-                  overlay_concurrency = 4,
+                  display_style       = PAD,
+                  pad_bgcolor         = 'Black',
+                  overlay_concurrency = 3,
                   overlay_direction   = DOWN,
                   overlay_min_gap     = 4,
-                  display_style       = PAD,
-                  pan_direction       = ALTERNATE,
-                  pad_bgcolor         = 'Black' ):
-        '''
-        display_style - How the clip will be rendered, defaults to PAD,
-        one of: OVERLAY, CROP, PAD, PAN
-        
-        pan_direction - If the clip is displayed with PAN display
-                        style, and panning occurs, should it be from
-                        the top/left to the bottom/right, the reverse,
-                        or alternating.  Default is alternating.
-
-        DEBUG - Document other options
-        '''
-        # This way of setting defaults allows the defaults to overlay to
-        # callers who proxy the creation of this class.
-        if overlay_concurrency is None:
-            overlay_concurrency = 3
-        if overlay_direction is None:
-            overlay_direction = DOWN
-        if display_style is None:
-            display_style = PAN
-        if pan_direction is None:
-            pan_direction = ALTERNATE
+                  pan_direction       = ALTERNATE ):
 
         if display_style in DISPLAY_STYLES:
             self.display_style = display_style
         else:
             raise Exception( "Invalid display style: %s, valid display styles are: %s" % ( display_style, DISPLAY_STYLES ) )
 
+        # OVERLAY display_style stuff.
         if overlay_direction in OVERLAY_DIRECTIONS:
             self.overlay_direction = overlay_direction
         else:
             raise Exception( "Invalid overlay direction: %s, valid overlay directions are: %s" % ( overlay_direction, OVERLAY_DIRECTIONS ) )
 
+        self.overlay_concurrency = overlay_concurrency
+
+        self.overlay_min_gap = overlay_min_gap
+
+        # PAN display_style stuff.
         if pan_direction == RIGHT:
             self.pan_direction = DOWN
         elif pan_direction == LEFT:
@@ -177,12 +214,18 @@ class Display( object ):
 
         self.prior_pan = UP
                          
-        self.overlay_concurrency = overlay_concurrency
-
-        self.overlay_min_gap = overlay_min_gap
-
+        # PAD display_style stuff.
         self.pad_bgcolor = pad_bgcolor
-
+    
+    # A given Display object alternates the direction of pans when
+    # display_type is PAN for each time an object is rendered with it.
+    #
+    # This is most useful when a Display is associated with a Window,
+    # and that Window has multiple Clips and the desire is to
+    # alternate pan_directions in that window.
+    #
+    # It also works for a given Clip, but that would require that
+    # sigle Clip be rendered at least twice in a given context.
     def get_pan_direction( self ):
         if self.pan_direction == ALTERNATE:
             if self.prior_pan == UP:
@@ -195,29 +238,38 @@ class Display( object ):
             self.prior_pan = self.pan_direction
             return self.pan_direction
 
-def get_display( clip, window ):
-    if clip.display is not None:
-        return clip.display
-    elif window.display is not None:
-        return window.display
-    else:
-        return Display()
-
+################################################################################
 class Video( object ):
-    # Class static variable so we only have to look things up once.
+    '''
+    The Video object represents a video associated with a physical file on the filesystem.
+
+    A primary source if Clip objects is to cut them out of Video objects.
+
+    Inputs:
+    * Filename - Full OS path to a video file.
+    * width - 
+
+    '''
+
+    # Class static variable, whenever we get a new Video object we do
+    # some FFPROBE calls to find out meadata about that video, but we
+    # do it only once filesystem file no matter how many times the
+    # object is created.
+    #
+    # NOTE - it is not supported to invoke Video for different file
+    # contents at the same filename over the course of the program.
     videos = {}
 
     def __init__( self, 
-                  filename,
-                  width=None,
-                  height=None,
-                  duration=None ):
-        
+                  filename ):
+
         if not os.path.exists( filename ):
             raise Exception( "No video found at: %s" % ( filename ) )
         else:
             self.filename = filename
 
+        # Check out static cache of Video data to see if we know about
+        # this file already.
         if filename in Video.videos:
             self.width = Video.videos[filename]['width']
             self.height = Video.videos[filename]['height']
@@ -225,7 +277,8 @@ class Video( object ):
             self.sample_aspect_ratio = Video.videos[filename]['sample_aspect_ratio']
             self.pix_fmt = Video.videos[filename]['pix_fmt']
         else:
-            ( status, output ) = commands.getstatusoutput( "ffprobe -v quiet -print_format json -show_format -show_streams %s" % ( filename ) )
+            # Collect file metadata with FFPRBE.
+            ( status, output ) = commands.getstatusoutput( "%s -v quiet -print_format json -show_format -show_streams %s" % ( FFPROBE, filename ) )
             info = json.loads( output )
             self.duration = float( info['format']['duration'] )
             self.width = int( info['streams'][0]['width'] )
@@ -246,16 +299,35 @@ class Video( object ):
                                        'duration' : self.duration,
                                        'sample_aspect_ratio' : self.sample_aspect_ratio,
                                        'pix_fmt'  : self.pix_fmt }
-        
+
+################################################################################        
 class Clip( object ):
+    '''Clip objects represent a segment of a video which will be composed
+    with other Clip objects into some Window objects using some
+    Display settings and rendered into a result physical video file.
+
+    A Clip is a portion (or all) of a the underlying video represented
+    by a Video object.
+
+    Inputs:
+    * video - a Video object
+    * start - Defaults to 0, the time in seconds this clip begins in
+      the source Video
+    * end - If specified, the time in seconds this clip ends in the
+      source Video, defaults to the end of the Video
+    * display - If specified, the Display settinsg this clip should be
+      rendered with.  If not specified this clip will fall back to the
+      default Display settings of the Window it is being rendered in.
+
+    '''
+
     def __init__( self,
                   video               = None,
                   start               = 0,
                   end                 = None,
-                  display             = None,
-                  clip                = None ):
+                  display             = None ):
         if video is None:
-            raise Exception( "Clip consturctor requires either a video argument, or clone and clip arguments." )
+            raise Exception( "Clip consturctor requires a video argument." )
 
         self.video = video
         
@@ -273,56 +345,36 @@ class Clip( object ):
         if end is None:
             self.end = video.duration
         else:
+            # Technically this min is unecessary due to the exception
+            # handling above, but it's here to clarify the valid
+            # values.
             self.end = min( float( end ), video.duration )
 
+        # It's OK for this to be None.
         self.display = display
             
     def get_duration( self ):
+        '''Returns the duration, in seconds, of this Clip.'''
         return self.end - self.start
         
     def get_sar( self ):
+        '''Returns the Sample Aspect Ratio (SAR) of the Video this Clip is from.'''
         return self.video.sample_aspect_ratio
 
     def get_pix_fmt( self ):
+        '''Returns the Pixel Format of the Video this Clip is from.'''
         return self.video.pix_fmt
 
-# Note - I had intended to offer scale arguments for watermark, but
-# ran across FFMPEG bugs (segmentation faults, memory corruption) when
-# using the FFMPEG scale filter on PNG images, so I left it out.
-class Watermark( object ):
-    def __init__( self, 
-                  filename = None,
-                  x = "0",
-                  y = "0",
-                  fade_in_start = None,     # Negative values are taken relative to the end of the video
-                  fade_in_duration = None,
-                  fade_out_start = None,    # Negative values are taken relative to end of video.
-                  fade_out_duration = None,
-                  bgcolor = None,
-                  width = None,
-                  height = None ):
 
-        self.filename = filename
-        if filename is not None and not os.path.exists( filename ):
-            raise Exception( "No watermark media found at: %s" % ( filename ) )
-        
-        self.bgcolor = bgcolor
-        self.width = width
-        self.height = height
-
-        if self.filename is None and ( self.bgcolor is None or self.width is None or self.height is None ):
-            raise Exception( "Either filename, or all of bgcolor, width, and height must be provided." )
-        elif self.filename is not None and ( self.bgcolor is not None ):
-            raise Exception( "Can't specify both filename and bgcolor for watermark." )
-
-        self.x = x
-        self.y = y
-        self.fade_in_start = fade_in_start
-        self.fade_in_duration = fade_in_duration
-        self.fade_out_start = fade_out_start
-        self.fade_out_duration = fade_out_duration
-        
+######################################################################        
 class Window( object ):
+    '''Window is the primary object to interact with.
+
+    A Window composes an arbitrary number of other Window and Clip
+    objects into a final video (and also maybe some images, sound
+    files, watermarks, etc.)
+
+    '''
     z = 0
     tmpdir = '/tmp/vsum/%s/' % ( getpass.getuser() )
     cache_dict_file = 'cachedb'
@@ -472,7 +524,7 @@ class Window( object ):
                 raise Exception( "No audio found at: %s" % ( audio_filename ) )
             else:
                 self.audio_filename = audio_filename
-                ( status, output ) = commands.getstatusoutput( "ffprobe -v quiet -print_format json -show_format %s" % ( audio_filename ) )
+                ( status, output ) = commands.getstatusoutput( "%s -v quiet -print_format json -show_format %s" % ( FFPROBE, audio_filename ) )
                 audio_info = json.loads( output )
                 self.audio_duration = float( audio_info['format']['duration'] )
         else:
@@ -502,6 +554,14 @@ class Window( object ):
         self.overlay_batch_concurrency = overlay_batch_concurrency
 
         self.force = force               
+    
+    def get_display( self, clip ):
+        if clip.display is not None:
+            return clip.display
+        elif self.display is not None:
+            return self.display
+        else:
+            return Display()
 
     def get_next_renderfile( self ):
         return "%s/%s.mp4" % ( Window.tmpdir, str( uuid.uuid4() ) )
@@ -584,8 +644,11 @@ class Window( object ):
             current = tmpfile
             window_file = window.render( helper=True )
             tmpfile = self.get_next_renderfile()
-
-            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -qp 18 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -a:c libfdk_aac -t %f %s' % ( FFMPEG, current, window_file, self.pix_fmt, window.x, window.y, sar_clause, self.duration, tmpfile )
+            
+            # WITH AUDIO
+            #cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -qp 18 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -a:c libfdk_aac -t %f %s' % ( FFMPEG, current, window_file, self.pix_fmt, window.x, window.y, sar_clause, self.duration, tmpfile )
+            # WITHOUT AUDIO
+            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -qp 18 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -t %f %s' % ( FFMPEG, current, window_file, self.pix_fmt, window.x, window.y, sar_clause, self.duration, tmpfile )
             #cmd = '%s -y -i %s -i %s -r 30000/1001 -qp 18 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s " -t %f %s' % ( FFMPEG, current, window_file, window.x, window.y, self.duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
@@ -695,7 +758,7 @@ class Window( object ):
         return tmpfile
 
     def get_clip_hash( self, clip, width, height, pan_direction="", pix_fmt="yuv420p" ):
-        display = get_display( clip, self )
+        display = self.get_display( clip )
         clip_name = "%s%s%s%s%s%s%s%s" % ( os.path.abspath( clip.video.filename ), 
                                            clip.start, 
                                            clip.end, 
@@ -730,7 +793,7 @@ class Window( object ):
         for clip in self.clips:
             filename = self.clip_render( clip )
 
-            display = get_display( clip, self )
+            display = self.get_display( clip )
             if display.display_style == OVERLAY:
                 overlays.append( { 'clip' : clip,
                                    'filename' : filename } )
@@ -766,7 +829,16 @@ class Window( object ):
                 raise Exception( "Error producing solid background file %s with command: %s" % ( tmpfile, cmd ) )   
 
         # Add our overlays.
+
         ( duration, overlay_timing ) = self.compute_duration( clips, include_overlay_timing=True )
+
+        # DEBUG
+        # THIS IS A HACK TO ACCOMODATE A SINGLE UNDERLYING BASE CLIP.
+        #overlay_mod = - ( self.compute_duration( [ clips[0] ] ) - 8 )
+        #overlay_timing = [ ( x[0] + overlay_mod, x[1] + overlay_mod ) for x in overlay_timing ]
+        # BRUTAL HACK TO GET THE FIRST CLIP TO DO WHAT I WANT!!!
+        #overlay_timing[0] = ( 3, 18 )
+
         for overlay_group in range( 0, len( overlays ), self.overlay_batch_concurrency ):
             prior_overlay = '0:v'
             cmd = "%s -y -i %s " % ( FFMPEG, tmpfile )
@@ -777,7 +849,7 @@ class Window( object ):
                 overlay_start = overlay_timing[overlay_idx][0]
                 overlay_end = overlay_timing[overlay_idx][1]
                 overlay = overlays[overlay_idx]['clip']
-                display = get_display( overlay, self )
+                display = self.get_display( overlay )
                 filename = overlays[overlay_idx]['filename']
 
                 include_clause += " -i %s " % ( filename )
@@ -821,7 +893,7 @@ class Window( object ):
         return tmpfile
 
     def clip_render( self, clip ):
-        display = get_display( clip, self )
+        display = self.get_display( clip )
 
         scale_clause = ""
         clip_width = None
@@ -981,35 +1053,54 @@ class Window( object ):
         pts_offset = 0
         overlay_timing = []
         overlay_prior_pts_offset = 0
+        first_overlay = True
         for clip in clips:
-            display = get_display( clip, self )
+            display = self.get_display( clip )
 
-            # Compute the PST offset for this clip.
+            # Compute the PTS offset for this clip.
             if display.display_style != OVERLAY:
                 pts_offset += clip.get_duration()
                 if pts_offset > duration:
                     duration = pts_offset
+
+                # Set the value for the next iteration.
+                overlay_prior_pts_offset = pts_offset
             else:
                 # It's complicated if this is a cascading clip.
+
+                # Initially we spin up to display.overlay_concurrency
+                # clips going, one immediately and the rest followed
+                # at display.overlay_min_gap intervals, we do this
+                # until there could be more than
+                # display.overlay_concurrency videos going at once.
                 if len( overlay_timing ) < display.overlay_concurrency:
-                    overlay_prior_pts_offset = pts_offset
-                    if pts_offset > 0 and pts_offset - overlay_prior_pts_offset <= display.overlay_min_gap:
-                        pts_offset = overlay_prior_pts_offset + display.overlay_min_gap
-                    elif pts_offset == 0:
+                    pts_offset = overlay_prior_pts_offset
+
+                    if overlay_prior_pts_offset > 0:
                         pts_offset += display.overlay_min_gap
+                    
                     overlay_timing.append( ( pts_offset, pts_offset + clip.get_duration() ) )
+
+                    # Set the value for the next iteration.
+                    overlay_prior_pts_offset = pts_offset
+
                 else:
-                    # Determine when we can begin the next overlay.
-                    overlay_prior_pts_offset = pts_offset
-                    # Extract the end times, sort them, and then look
-                    # at the display.overlay_concurrency largest ones,
-                    # and take the minimum of those.
+                    # Find the earliest time one of the most recently
+                    # started overlay_concurrency clips are ending,
+                    # this is our candidate for when to start the next
+                    # clip.
                     pts_offset = min( sorted( [ x[1] for x in overlay_timing ] )[-display.overlay_concurrency:] )
-                    if pts_offset > 0 and pts_offset - overlay_prior_pts_offset <= display.overlay_min_gap:
+
+                    if pts_offset - overlay_prior_pts_offset < display.overlay_min_gap:
+                        # If not enough time has elapsed since we
+                        # started a clip, push it out a bit.
                         pts_offset = overlay_prior_pts_offset + display.overlay_min_gap
-                    elif pts_offset == 0:
-                        pts_offset += display.overlay_min_gap
+
                     overlay_timing.append( ( pts_offset, pts_offset + clip.get_duration() ) )
+
+                    # Set the value for the next iteration.
+                    overlay_prior_pts_offset = pts_offset
+
                 if max( [ x[1] for x in overlay_timing ] ) > duration:
                     duration = max( [ x[1] for x in overlay_timing ] )
                     
@@ -1020,18 +1111,229 @@ class Window( object ):
 
     def get_child_windows( self, include_self=False ):
         '''Recursively get the list of all child windows.'''
+
+        def flatten( l ):
+            '''Internal only helper function for collapsing all nested window
+            objects onto a single list.'''
+
+            for el in l:
+                if isinstance(el, collections.Iterable) and not isinstance(el, basestring):
+                    for sub in flatten(el):
+                        yield sub
+                else:
+                    yield el
+
         prepend = []
         if include_self:
             prepend = [ self ]
         return flatten( prepend + [ w.get_child_windows( include_self=True ) for w in self.windows ] )
-            
-def flatten(l):
-    for el in l:
-        if isinstance(el, collections.Iterable) and not isinstance(el, basestring):
-            for sub in flatten(el):
-                yield sub
-        else:
-            yield el
+
+
+# Note - I had intended to offer scale arguments for watermark, but
+# ran across FFMPEG bugs (segmentation faults, memory corruption) when
+# using the FFMPEG scale filter on PNG images, so I left it out.
+class Watermark( object ):
+    def __init__( self, 
+                  filename = None,
+                  x = "0",
+                  y = "0",
+                  fade_in_start = None,     # Negative values are taken relative to the end of the video
+                  fade_in_duration = None,
+                  fade_out_start = None,    # Negative values are taken relative to end of video.
+                  fade_out_duration = None,
+                  bgcolor = None,
+                  width = None,
+                  height = None ):
+
+        self.filename = filename
+        if filename is not None and not os.path.exists( filename ):
+            raise Exception( "No watermark media found at: %s" % ( filename ) )
+        
+        self.bgcolor = bgcolor
+        self.width = width
+        self.height = height
+
+        if self.filename is None and ( self.bgcolor is None or self.width is None or self.height is None ):
+            raise Exception( "Either filename, or all of bgcolor, width, and height must be provided." )
+        elif self.filename is not None and ( self.bgcolor is not None ):
+            raise Exception( "Can't specify both filename and bgcolor for watermark." )
+
+        self.x = x
+        self.y = y
+        self.fade_in_start = fade_in_start
+        self.fade_in_duration = fade_in_duration
+        self.fade_out_start = fade_out_start
+        self.fade_out_duration = fade_out_duration
+
+
+
+######################################################################
+######################################################################
+######################################################################
+# UTILITY METHODS
+######################################################################
+######################################################################
+######################################################################
+
+######################################################################
+def distribute_clips( clips, windows, min_duration=None, randomize_clips=False ):
+    '''Utility function for creating collage videos of a set of clips.
+
+    Input/Output parameters: 
+
+    * windows - A list of vsum.Window objects to distribut the clips
+      among.  These Window objects are modified by having whatever
+      clips this function determines to send to them added to the end
+      of their clips list.
+
+    Inputs:
+    * clips - A list of vsum.Clip objects to distribute
+
+    * min_duration - If set to a numeric value the clips will be
+      repeated over and over until the desired min_duration is met.
+      Otherwise each clip is shown once and the resulting duration is
+      a function of the resulting length within each window.
+      
+    NOTE: If min_duration is set, once it is obtained no more clips
+    will be added to the result, and some input clips mayu be unusued
+    in that scenario.
+
+    * randomize_clips - If true the input clips array will have it's
+      contents randomized prior to being distributed, otherwise the
+      resulting clips will be shown in order.
+
+    The main idea is that a set of "windows" will be defined, such as
+    this:
+
+    +------------------------------------------+
+    |                  Window 1                |
+    |  +-------------------------+             |
+    |  | Window 2                |  +---------+|
+    |  |                         |  | Window 3||
+    |  +-------------------------+  |         ||
+    |                               |         ||
+    |                               |         ||
+    |                               +---------+|
+    +------------------------------------------+
+
+    And clips will be distributed among them.
+
+    This attempts to place clips in the window whose aspect ratio is a
+    close match for the clip, while also balancing the total content
+    duration of the clips in the windows (note: this can be different
+    from the total duration of the rendered window when cascading
+    clips are used).
+
+    The exact logic used to distribute clips is:
+
+    1. Get a prioritize list of windows to put the clip in, the
+    windows are prioritized first by having the closest aspect ratio
+    to the clip, and then among windows with the same aspect ratio
+    from lowest window duration to longest.
+
+    2. Then, we walk down this prioritized list and place this clip in
+    the first window such that both:
+        * ( window_duration + clip_duration ) <= 1.2*( minimum_window_duration + clip_duration )
+        * and, if min_duration is set:
+        * windor_duration < min_duration
+
+    '''
+
+    if len( clips ) == 0:
+        return
+
+    window_stats = []
+    for window in windows:
+        ar = float( window.width ) / window.height
+        duration = 0
+        window_stats.append( { 'window'   : window,
+                               'ar'       : ar,
+                               'duration' : duration } )
+
+    # Internal only function to do the recusrive work of parseling out
+    # things.
+    def add_clips_helper():
+        if randomize_clips:
+            random.shuffle( clips )
+
+        for clip in clips:
+            ar = float( clip.video.width ) / clip.video.height
+            duration = clip.get_duration()
+
+            window_durations = [ x.compute_duration( x.clips ) for x in windows ]
+            min_window_duration = min( window_durations )
+
+            # Sort candidate windows by increasing AR match and then by increasing duration.
+            window_stats.sort( key=lambda x: ( abs( x['ar'] - ar ), x['duration'] ) )
+        
+            # Find a window to add this clip to, while maintaining this
+            # constraint:
+            #
+            # Find the first window sorted by closest aspect ratio and
+            # then duration so long as adding this clip to the window so
+            # long as:
+            # window.duration + clip.duration <= 1.2*(min_window_duration + clip.duration)
+            # window.duration < min_duration (if min_duration is not none)
+            clip_added = False
+            for window in window_stats:
+                if ( window['duration'] + duration ) <= 1.2*( min_window_duration + duration ):
+                    if min_duration is None or window['duration'] < min_duration:
+                        window['window'].clips.append( clip )
+                        window['duration'] = window['window'].compute_duration( window['window'].clips )
+                        clip_added = True
+                        break
+                  
+            if not clip_added and min_duration is None:
+                raise Exception( "Failed to place clip in a window." )
+
+    if min_duration is None:
+        add_clips_helper()
+    else:
+        add_clips_helper()
+        window_durations = [ x.compute_duration( x.clips ) for x in windows ]
+        while min( window_durations ) < min_duration:
+            add_clips_helper()
+            window_durations = [ x.compute_duration( x.clips ) for x in windows ]
+
+    # No return value - the windows input/output parameter has the
+    # chances made by this routine.
+    return
+
+################################################################################
+def get_solid_clip( duration,
+                    width   = 1280,
+                    height  = 720,
+                    bgcolor = 'Black',
+                    bgimage_file = None,
+                    output_file = None ):
+    '''Create a video file of the desired properties.
+
+    Inputs:
+    * duration - Time in seconds of the video
+    * width / height - Width / height in pixels of the video.
+    * bgcolor - The background color of the video
+    * bgimage_file - Optional, if specified the video should consist
+      of this image rather than a solid color.
+
+    * output_file - If specified, the resulting file will be placed at output_file.  Default is to place it in the vsum module's temporary files location, which is by default 
+
+    Outputs: Returns a string denoting the filesystem path where the
+    resulting video can be found.
+
+    '''
+    
+    #ffmpeg -f lavfi -i aevalsrc=0 -i video.mov -shortest -c:v copy -c:a aac \
+    #                              -strict experimental output.mov
+    #ffmpeg -f lavfi -i aevalsrc=0:0:0:0:0:0::duration=1 silence.ac3
+
+
+    w = Window( duration = duration,
+                width    = width,
+                height   = height,
+                bgcolor  = bgcolor,
+                bgimage_file = bgimage_file )
+    
+    return w.render()
 
 if __name__ == '__main__':
     ''' Example usage:
