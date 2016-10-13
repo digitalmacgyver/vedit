@@ -35,8 +35,13 @@ import uuid
 #
 # If the path where this script is run does not have these binaries,
 # the full path to them can be updated here.
-FFMPEG = 'ffmpeg'
-FFPROBE = 'ffprobe'
+#FFMPEG = 'ffmpeg'
+#FFPROBE = 'ffprobe'
+
+
+FFMPEG = '/home/viblio/tmp/ffmpeg_new/ffmpeg/ffmpeg'
+FFPROBE = '/home/viblio/tmp/ffmpeg_new/ffmpeg/ffprobe'
+
 
 # "Constant" Clip display styles.
 #
@@ -421,14 +426,26 @@ class Window( object ):
       end of the video for the last 5 seconds.
 
     * duration - Optional. If specified the duration of the rendered
-      content of this Window.  Defaults to the length of the optional
-      audio_filename, or if that is not provided then defaults to the
-      maximum duration of the rendered clips of this or any child
-      windows.  If the specified duration is shorter than the content
-      of clips some clips will not be shown.  If it is longer there
-      will be blank content at the end of the clips.  If the duration
-      and the length of the audio_file differ, then the audion file
-      will fade out starting 5 seconds before the end of the video.
+      content of this Window.  
+  
+      Defaults to the length of the optional audio_filename, or if
+      that is not provided then defaults to the maximum duration of
+      the rendered clips of this or any child windows.  
+
+      The duration of a given set of clips is calculated as: 
+
+      DEBUG
+      + In the case of only non-OVERLAY clips the total duration of
+        the clips
+      + In the case of a 
+
+      If the specified duration is shorter than the content of clips
+      some clips will not be shown.  If it is longer there will be
+      blank content at the end of the clips.  
+
+      If the duration and the length of the audio_file differ, then
+      the audion file will fade out starting 5 seconds before the end
+      of the video.
 
     * output_file - Defaults to "./output.mp4" where the resulting
       video from a call to render this Window will be created.
@@ -790,27 +807,26 @@ class Window( object ):
                 self.duration = my_duration
 
         ###### Background stuff ##############################
-        # Lay down a background if requested to.
+        background_file = self.get_next_renderfile()
         if self.bgimage_file is not None:
-            tmpfile = self.get_next_renderfile()
-            cmd = '%s -y -loop 1 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -filter_complex " color=%s:size=%dx%d [base] ; [base] [0] overlay%s " -t %f %s' % ( FFMPEG, self.bgimage_file, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, tmpfile )
+            # Lay down a background if requested to.
+            cmd = '%s -y -loop 1 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " color=%s:size=%dx%d,setpts=PTS-STARTPTS/TB [base] ; [0] setpts=PTS-STARTPTS/TB [image]; [base] [image] overlay%s " -t %f %s' % ( FFMPEG, self.bgimage_file, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, background_file )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
-            if status != 0 or not os.path.exists( tmpfile ):
-                raise Exception( "Error producing background image video file %s with command: %s" % ( tmpfile, cmd ) )
-
-        # Handle the case where there are no clips and no background.
-        if len( self.clips ) == 0 and self.bgimage_file is None:
-            tmpfile = self.get_next_renderfile()
-            cmd = '%s -y -pix_fmt %s -r 30000/1001 -crf 16 -filter_complex " color=%s:size=%dx%d%s " -t %f %s' % ( FFMPEG, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, tmpfile )
-            print "Running: %s" % ( cmd )
-            ( status, output ) = commands.getstatusoutput( cmd )
-            print "Output was: %s" % ( output )
-            if status != 0 or not os.path.exists( tmpfile ):
-                raise Exception( "Error producing solid background file %s with command: %s" % ( tmpfile, cmd ) )
+            if status != 0 or not os.path.exists( background_file ):
+                raise Exception( "Error producing background image video file %s with command: %s" % ( background_file, cmd ) )
         else:
-            tmpfile = self.render_clips( self.clips, tmpfile )
+            # There was no background image, lay down a solid color.
+            cmd = '%s -y -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " color=%s:size=%dx%d%s,setpts=PTS-STARTPTS/TB " -t %f %s' % ( FFMPEG, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, background_file )
+            print "Running: %s" % ( cmd )
+            ( status, output ) = commands.getstatusoutput( cmd )
+            print "Output was: %s" % ( output )
+            if status != 0 or not os.path.exists( background_file ):
+                raise Exception( "Error producing solid background file %s with command: %s" % ( background_file, cmd ) )
+                
+        ###### Render This Window's Clips ####################
+        tmpfile = self.render_clips( self.clips, background_file )
 
         ###### Render All Child Windows ######################
         for window in sorted( self.windows, key=lambda x: x.z_index ):
@@ -824,9 +840,9 @@ class Window( object ):
             tmpfile = self.get_next_renderfile()
             
             # WITH AUDIO
-            #cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -a:c libfdk_aac -t %f %s' % ( FFMPEG, current, window_file, self.pix_fmt, window.x, window.y, sar_clause, self.duration, tmpfile )
+            #cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -a:c libfdk_aac -t %f %s' % ( FFMPEG, current, window_file, window.pix_fmt, window.x, window.y, sar_clause, window.duration, tmpfile )
             # WITHOUT AUDIO
-            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -t %f %s' % ( FFMPEG, current, window_file, self.pix_fmt, window.x, window.y, sar_clause, self.duration, tmpfile )
+            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -t %f %s' % ( FFMPEG, current, window_file, window.pix_fmt, window.x, window.y, sar_clause, window.duration, tmpfile )
 
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
@@ -932,7 +948,8 @@ class Window( object ):
             #cmd += ' [%s] [w%d] overlay=x=%s:y=%s [o%s] ; ' % ( prior_overlay, idx, watermark.x, watermark.y, idx )
             prior_overlay = "o%s" % idx
 
-        cmd += ' [%s] copy " %s' % ( prior_overlay, tmpfile )
+        #cmd += ' [%s] copy " %s' % ( prior_overlay, tmpfile )
+        cmd += ' " %s' % ( tmpfile )
         print "Running: %s" % ( cmd )
         ( status, output ) = commands.getstatusoutput( cmd )
         print "Output was: %s" % ( output )
@@ -965,8 +982,20 @@ class Window( object ):
 
 
     ### Window method ########################################
-    def render_clips( self, clips, tmpfile ):
-        '''For each clip we:
+    def render_clips( self, clips, background_file ):
+        '''Render the clips for the current window.
+
+        Inputs:
+
+        self - The current Window
+
+        clips - a list of clips to render
+
+        background_file - Path to a video file with a background for
+        any OVERLAY clips to be rendered onto, this is returned if the
+        clips argument is the empty list
+
+        For each clip we:
         
         1. Check in our cache to see if we already have a version of
         this clip in the appropriate resolution.
@@ -977,19 +1006,23 @@ class Window( object ):
         3. Concatenate and overlay the following clips according to
         this procedure:
 
-        We process the Clips in order in self.clips.
+        We process the Clips in order in self.clips, and concatenate
+        all the non-OVERLAY clips to one another.
 
-        For Clips whose display_style is not OVERLAY, we append them
-        onto one another.
+        Then we overlay the OVERLAY clips on top, starting at the
+        beginning.
 
-        If we encounter clips whose display_style is OVERLAY, we begin
-        layering them on top of the current Clip (if any, perhaps it's
-        just a background color or image).
+        The return value is a file of rendered video, either that
+        containing the clips, or just the background_file itself if
+        there were no clips.
+
         '''
 
         if len( clips ) == 0:
             # Nothing to do.
-            return tmpfile
+            return background_file
+
+        tmpfile = None
 
         clip_files = []
         overlays = []
@@ -1007,49 +1040,48 @@ class Window( object ):
         
         # Concatenate all clip files.
         if len( clip_files ):
-            tmpfile = self.get_next_renderfile()
+            concat_vid = self.get_next_renderfile()
             concat_file = "%s/concat-%s.txt" % ( Window.tmpdir, str( uuid.uuid4() ) )
             f = open( concat_file, 'w' )
             for clip_file in clip_files:
                 f.write( "file '%s'\n" % ( clip_file ))
             f.close()
             if self.original_audio:
-                cmd = "%s -y -f concat -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:a libfdk_aac %s" % ( FFMPEG, concat_file, self.pix_fmt, tmpfile )
+                cmd = "%s -y -f concat -safe 0 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -c:a libfdk_aac %s" % ( FFMPEG, concat_file, self.pix_fmt, concat_vid )
             else:
-                cmd = "%s -y -f concat -i %s -pix_fmt %s -r 30000/1001 -crf 16 -an %s" % ( FFMPEG, concat_file, self.pix_fmt, tmpfile )
+                cmd = "%s -y -f concat -safe 0 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -an %s" % ( FFMPEG, concat_file, self.pix_fmt, concat_vid )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
-            if status != 0 or not os.path.exists( tmpfile ):
-                raise Exception( "Error producing concatenated file %s with command: %s" % ( tmpfile, cmd ) )
-        elif tmpfile is None:
-            # All the clips are overlays and we have no background.
-            duration = self.compute_duration( self.clips )
+            if status != 0 or not os.path.exists( concat_vid ):
+                raise Exception( "Error producing concatenated file %s with command: %s" % ( concat_vid, cmd ) )
+
+            # Put the result on top of the background_file.
             tmpfile = self.get_next_renderfile()
-            cmd = '%s -y -pix_fmt %s -r 30000/1001 -crf 16 -filter_complex " color=%s:size=%dx%d " -t %f %s' % ( FFMPEG, self.pix_fmt, self.bgcolor, self.width, self.height, duration, tmpfile )
+            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " [0:v] setpts=PTS-STARTPTS/TB [a] ; [1:v] setpts=PTS-STARTPTS/TB [b] ; [a] [b] overlay=x=0:y=0:eof_action=pass " -t %f %s' % ( FFMPEG, background_file, concat_vid, self.pix_fmt, self.duration, tmpfile )
+
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
             if status != 0 or not os.path.exists( tmpfile ):
-                raise Exception( "Error producing solid background file %s with command: %s" % ( tmpfile, cmd ) )   
+                raise Exception( "Error producing conctenated clip file %s with command: %s" % ( tmpfile, cmd ) )
+
+        else:
+            tmpfile = background_file
+
 
         # Add our overlays.
-
         ( duration, overlay_timing ) = self.compute_duration( clips, include_overlay_timing=True )
 
-        # DEBUG
-        # THIS IS A HACK TO ACCOMMODATE A SINGLE UNDERLYING BASE CLIP.
-        #overlay_mod = - ( self.compute_duration( [ clips[0] ] ) - 8 )
-        #overlay_timing = [ ( x[0] + overlay_mod, x[1] + overlay_mod ) for x in overlay_timing ]
-        # BRUTAL HACK TO GET THE FIRST CLIP TO DO WHAT I WANT!!!
-        #overlay_timing[0] = ( 3, 18 )
-
+        # Goofy nested for loops here because ffmpeg has problems if
+        # the command line gets too long with too many overlays, so we
+        # do it a bit at a time.
         for overlay_group in range( 0, len( overlays ), self.overlay_batch_concurrency ):
             prior_overlay = '0:v'
             cmd = "%s -y -i %s " % ( FFMPEG, tmpfile )
             include_clause = ""
             scale_clause = ""
-            filter_complex = ' -pix_fmt %s -r 30001/1001 -crf 16 -filter_complex " ' % ( self.pix_fmt )
+            filter_complex = ' -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " ' % ( self.pix_fmt )
             for overlay_idx in range( overlay_group, min( len( overlays ), overlay_group + self.overlay_batch_concurrency ) ):
                 overlay_start = overlay_timing[overlay_idx][0]
                 overlay_end = overlay_timing[overlay_idx][1]
@@ -1092,14 +1124,20 @@ class Window( object ):
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
-            if status != 0 or not os.path.exists( filename ):
-                raise Exception( "Error producing clip file by %s at: %s" % ( cmd, filename ) )
+            if status != 0 or not os.path.exists( tmpfile ):
+                raise Exception( "Error producing clip file by %s at: %s" % ( cmd, tmpfile ) )
 
         return tmpfile
 
 
     ### Window method ########################################
     def clip_render( self, clip ):
+        '''Render a single clip into the tmpdir according to the rules defined
+        by the appropriate Display object.
+
+        Returns the name of a file where the resulting rendered clip
+        is at.
+        '''
         display = self.get_display( clip )
 
         scale_clause = ""
@@ -1196,9 +1234,10 @@ class Window( object ):
             filename = "%s/%s.mp4" % ( Window.tmpdir, clip_hash )
             
             if self.original_audio:
-                cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:a libfdk_aac %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )
+                cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -c:a libfdk_aac %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )
             else:
-                cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -crf 16 -an %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )               
+                cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -an %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )   
+            
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -1260,63 +1299,80 @@ class Window( object ):
         The array of timing data has N elements, one for each clip of
         type Overlay, and each element is a start time, end time
         tuple.
+
+        The logic is:
+
+        Clips whose display_type is not OVERLAY are appended to one
+        another.
+
+        Clips whose display_type is OVERLAY cascade on top of those as
+        dictated by the number of them, their durations, and the
+        overlay_concurrency and overlay_min_gap their Displays have.
+
         '''
 
+        # Compute the duration due to non-OVERLAY Clips.
+        serial_start = 0
         duration = 0
-        pts_offset = 0
-        overlay_timing = []
-        overlay_prior_pts_offset = 0
-        first_overlay = True
         for clip in clips:
             display = self.get_display( clip )
 
-            # Compute the PTS offset for this clip.
             if display.display_style != OVERLAY:
-                pts_offset += clip.get_duration()
-                if pts_offset > duration:
-                    duration = pts_offset
+                serial_start += clip.get_duration()
+                duration += clip.get_duration()
 
-                # Set the value for the next iteration.
-                overlay_prior_pts_offset = pts_offset
-            else:
-                # It's complicated if this is a cascading clip.
 
+        # Compute any change to the duration based on OVERLAY Clips,
+        # and also compute the overlay timing data structure.
+        overlay_start = 0
+        overlay_timing = []
+        overlay_prior_start = 0
+        for clip in clips:
+            display = self.get_display( clip )
+
+            if display.display_style == OVERLAY:
                 # Initially we spin up to display.overlay_concurrency
                 # clips going, one immediately and the rest followed
                 # at display.overlay_min_gap intervals, we do this
                 # until there could be more than
                 # display.overlay_concurrency videos going at once.
                 if len( overlay_timing ) < display.overlay_concurrency:
-                    pts_offset = overlay_prior_pts_offset
+                    overlay_start = len( overlay_timing ) * display.overlay_min_gap
 
-                    if overlay_prior_pts_offset > 0:
-                        pts_offset += display.overlay_min_gap
-                    
-                    overlay_timing.append( ( pts_offset, pts_offset + clip.get_duration() ) )
+                    overlay_end = overlay_start + clip.get_duration()
+
+                    # If we have more overlays than non-overlays, update duration accordingly.
+                    if overlay_end > duration:
+                        duration = overlay_end
+
+                    overlay_timing.append( ( overlay_start, overlay_end ) )
 
                     # Set the value for the next iteration.
-                    overlay_prior_pts_offset = pts_offset
+                    overlay_prior_start = overlay_start
 
                 else:
                     # Find the earliest time one of the most recently
                     # started overlay_concurrency clips are ending,
                     # this is our candidate for when to start the next
                     # clip.
-                    pts_offset = min( sorted( [ x[1] for x in overlay_timing ] )[-display.overlay_concurrency:] )
+                    overlay_start = min( sorted( [ x[1] for x in overlay_timing ] )[-display.overlay_concurrency:] )
 
-                    if pts_offset - overlay_prior_pts_offset < display.overlay_min_gap:
+                    if overlay_start - overlay_prior_start < display.overlay_min_gap:
                         # If not enough time has elapsed since we
                         # started a clip, push it out a bit.
-                        pts_offset = overlay_prior_pts_offset + display.overlay_min_gap
+                        overlay_start = overlay_prior_start + display.overlay_min_gap
 
-                    overlay_timing.append( ( pts_offset, pts_offset + clip.get_duration() ) )
+                    overlay_end = overlay_start + clip.get_duration()
+                        
+                    overlay_timing.append( ( overlay_start, overlay_end ) )
+
+                    # If we have more overlays than non-overlays, update duration accordingly.
+                    if overlay_end > duration:
+                        duration = overlay_end
 
                     # Set the value for the next iteration.
-                    overlay_prior_pts_offset = pts_offset
+                    overlay_prior_start = overlay_start
 
-                if max( [ x[1] for x in overlay_timing ] ) > duration:
-                    duration = max( [ x[1] for x in overlay_timing ] )
-                    
         if include_overlay_timing:
             return ( duration, overlay_timing )
         else:
@@ -1530,7 +1586,9 @@ def get_solid_clip( duration,
     * bgimage_file - Optional, if specified the video should consist
       of this image rather than a solid color.
 
-    * output_file - If specified, the resulting file will be placed at output_file.  Default is to place it in the vsum module's temporary files location, which is by default 
+    * output_file - If specified, the resulting file will be placed at
+      output_file.  Default is to place it in the vsum module's
+      temporary files location, which is by default
 
     Outputs: Returns a string denoting the filesystem path where the
     resulting video can be found.
