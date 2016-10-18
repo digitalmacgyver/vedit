@@ -2,6 +2,9 @@ Fun utility for combining various video clips with FFMPEG.
 
 For each window, the base most layer will be the bgimage_file (if specified) 
 
+./configure --enable-gpl --enable-libx264 --enable-nonfree --enable-libfdk-aac
+
+
 Caching behaviors:
 
 * When a Video object is created, ffprobe is called to gather some metadata about the video.  This is done once per unique OS filename per program invocation.  It is not supported to construct different Video objects from the same OS filename but different contents.
@@ -48,3 +51,7 @@ Video oddities:
 * The quality of the output video relative to the inputs is set by the
   ffmpeg -crf option with an argument of 16, which should be visially
   lossless.
+
+* The first video stream encountered in a file is the one used.
+
+* The first audio stream encountered in a file is the one used.
