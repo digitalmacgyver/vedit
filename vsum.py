@@ -38,7 +38,6 @@ import uuid
 #FFMPEG = 'ffmpeg'
 #FFPROBE = 'ffprobe'
 
-
 FFMPEG = '/home/viblio/tmp/ffmpeg_new/ffmpeg/ffmpeg'
 FFPROBE = '/home/viblio/tmp/ffmpeg_new/ffmpeg/ffprobe'
 
@@ -179,9 +178,14 @@ class Display( object ):
     * overlay_min_gap lists the minimum duration between when two
       clips may be started to animate. Defaults to 4 seconds.
 
+    If include_audio is set to true the audio from this clip will be
+    included in the output, mixed together with whatever other audio
+    is present in concurrent clips.
+
     NOTE: If overlay_min_gap is high relative to the length of videos,
     there will be times when nothing is cascading and/or there are
     fewer than overlay_concurrency clips cascading.
+
     '''
 
     def __init__( self, 
@@ -190,7 +194,8 @@ class Display( object ):
                   overlay_concurrency = 3,
                   overlay_direction   = DOWN,
                   overlay_min_gap     = 4,
-                  pan_direction       = ALTERNATE ):
+                  pan_direction       = ALTERNATE,
+                  include_audio       = False ):
 
         if display_style in DISPLAY_STYLES:
             self.display_style = display_style
@@ -222,6 +227,8 @@ class Display( object ):
         # PAD display_style stuff.
         self.pad_bgcolor = pad_bgcolor
     
+        self.include_audio = include_audio
+
     # A given Display object alternates the direction of pans when
     # display_type is PAN for each time an object is rendered with it.
     #
@@ -252,7 +259,8 @@ class Video( object ):
 
     Inputs:
     * Filename - Full OS path to a video file.
-    * width - 
+
+    Outputs: None
 
     '''
 
@@ -281,6 +289,7 @@ class Video( object ):
             self.duration = Video.videos[filename]['duration']
             self.sample_aspect_ratio = Video.videos[filename]['sample_aspect_ratio']
             self.pix_fmt = Video.videos[filename]['pix_fmt']
+            self.channels = Video.videos[filename]['channels']
         else:
             # Collect file metadata with FFPROBE.
             ( status, output ) = commands.getstatusoutput( "%s -v quiet -print_format json -show_format -show_streams %s" % ( FFPROBE, filename ) )
@@ -299,6 +308,12 @@ class Video( object ):
                     print "WARNING: Strange SAR value of %s:%s detected, setting SAR to 1:1." % ( sarwidth, sarheight )
                     self.sample_aspect_ratio = '1:1'
             self.pix_fmt = info['streams'][0].get( 'pix_fmt', '' )
+
+            self.channels = None
+            if len( info['streams'] ) > 1:
+                if 'channels' in info['streams'][1]:
+                    self.channels = int( info['streams'][1]['channels'] )
+
             Video.videos[filename] = { 'width'    : self.width,
                                        'height'   : self.height,
                                        'duration' : self.duration,
@@ -362,6 +377,10 @@ class Clip( object ):
         '''Returns the duration, in seconds, of this Clip.'''
         return self.end - self.start
         
+    def get_channels( self ):
+        '''Returns the number of channels in the audio for this video, None if there is no audio.'''
+        return self.video.channels
+
     def get_sar( self ):
         '''Returns the Sample Aspect Ratio (SAR) of the Video this Clip is from.'''
         return self.video.sample_aspect_ratio
@@ -432,12 +451,15 @@ class Window( object ):
       that is not provided then defaults to the maximum duration of
       the rendered clips of this or any child windows.  
 
-      The duration of a given set of clips is calculated as: 
+      The duration of a given set of clips is calculated as the larger
+      of:
 
-      DEBUG
-      + In the case of only non-OVERLAY clips the total duration of
-        the clips
-      + In the case of a 
+      + Either, the length of all non-OVERLAY clips concatenated
+        together
+
+      + Or the length of the display time of all OVERLAY clips given
+        their various staggered start times depending on the number of
+        clips, their overlay concurrency, their durations, etc.
 
       If the specified duration is shorter than the content of clips
       some clips will not be shown.  If it is longer there will be
@@ -609,7 +631,6 @@ class Window( object ):
                                    # shown.
                   z_index = None,
                   watermarks = None,
-                  original_audio = False,
                   audio_filename = None,
                   audio_desc = '',
                   display = None,
@@ -670,7 +691,7 @@ class Window( object ):
         else:
             self.watermarks = []
 
-        self.original_audio = original_audio
+        #self.original_audio = original_audio
 
         if audio_filename is not None:
             if not os.path.exists( audio_filename ):
@@ -806,25 +827,28 @@ class Window( object ):
                 print "WARNING: No duration specified for window, set duration to %s, the longest duration of clips in this or any of its child windows." % ( my_duration )
                 self.duration = my_duration
 
+
+        #ffmpeg -i VIDEO -i AUDIO -filter_complex "[1:0]apad" -shortest OUTPUT
+
         ###### Background stuff ##############################
         background_file = self.get_next_renderfile()
         if self.bgimage_file is not None:
-            # Lay down a background if requested to.
-            cmd = '%s -y -loop 1 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " color=%s:size=%dx%d,setpts=PTS-STARTPTS/TB [base] ; [0] setpts=PTS-STARTPTS/TB [image]; [base] [image] overlay%s " -t %f %s' % ( FFMPEG, self.bgimage_file, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, background_file )
+            # Lay down a background with silent audio if requested to.
+            cmd = '%s -y -loop 1 -i %s -f lavfi -i aevalsrc=0 -c:a libfdk_aac -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 -filter_complex " color=%s:size=%dx%d,setpts=PTS-STARTPTS/TB [base] ; [0] setpts=PTS-STARTPTS/TB [image]; [base] [image] overlay%s " -t %f %s' % ( FFMPEG, self.bgimage_file, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, background_file )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
             if status != 0 or not os.path.exists( background_file ):
                 raise Exception( "Error producing background image video file %s with command: %s" % ( background_file, cmd ) )
         else:
-            # There was no background image, lay down a solid color.
-            cmd = '%s -y -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " color=%s:size=%dx%d%s,setpts=PTS-STARTPTS/TB " -t %f %s' % ( FFMPEG, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, background_file )
+            # There was no background image, lay down a solid color with silent audio.
+            cmd = '%s -y -f lavfi -i aevalsrc=0 -c:a libfdk_aac -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " color=%s:size=%dx%d%s,setpts=PTS-STARTPTS/TB " -t %f %s' % ( FFMPEG, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, background_file )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
             if status != 0 or not os.path.exists( background_file ):
                 raise Exception( "Error producing solid background file %s with command: %s" % ( background_file, cmd ) )
-                
+
         ###### Render This Window's Clips ####################
         tmpfile = self.render_clips( self.clips, background_file )
 
@@ -840,9 +864,9 @@ class Window( object ):
             tmpfile = self.get_next_renderfile()
             
             # WITH AUDIO
-            #cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -a:c libfdk_aac -t %f %s' % ( FFMPEG, current, window_file, window.pix_fmt, window.x, window.y, sar_clause, window.duration, tmpfile )
+            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 -c:a libfdk_aac -filter_complex " [0:v] fifo [v0] ; [1:v] fifo [v1] ; [v0] [v1] overlay=x=%s:y=%s:eof_action=pass%s [outv] ; [0:a] afifo [a0] ; [1:a] afifo [a1] ; [a0] [a1] amix=inputs=2:duration=longest:dropout_transition=0 [outa] " -map "[outv]" -map "[outa]" -t %f %s' % ( FFMPEG, current, window_file, window.pix_fmt, window.x, window.y, sar_clause, window.duration, tmpfile )
             # WITHOUT AUDIO
-            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -t %f %s' % ( FFMPEG, current, window_file, window.pix_fmt, window.x, window.y, sar_clause, window.duration, tmpfile )
+            #cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -t %f %s' % ( FFMPEG, current, window_file, window.pix_fmt, window.x, window.y, sar_clause, window.duration, tmpfile )
 
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
@@ -862,7 +886,7 @@ class Window( object ):
             else:
                 audio_fade_start = max( 0, self.duration - 5 )
                 audio_fade_duration = self.duration - audio_fade_start
-            afade_clause = ' -c:a libfdk_aac -af "afade=t=out:st=%f:d=%f" ' % ( audio_fade_start, audio_fade_duration )
+            afade_clause = ' -c:a libfdk_aac -af " [1:a] afade=t=out:st=%f:d=%f [a1] ; [0:a] [a1] amix=inputs=2:duration=longest:dropout_transition=0 " ' % ( audio_fade_start, audio_fade_duration )
 
             current = tmpfile
             tmpfile = self.get_next_renderfile()
@@ -882,6 +906,16 @@ class Window( object ):
             print "Output was: %s" % ( output )
             if status != 0 or not os.path.exists( tmpfile ):
                 raise Exception( "Error adding audio %s to file %s with command: %s" % ( self.audio_filename, current, cmd ) )
+
+        ###### Fix overall volume issues.
+        current = tmpfile
+        tmpfile = self.get_next_renderfile()
+        cmd = '%s -y -i %s -pix_fmt %s -c:a libfdk_aac -vf copy -af " [0:a] dynaudnorm " %s' % ( FFMPEG, current, self.pix_fmt, tmpfile )
+        print "Running: %s" % ( cmd )
+        ( status, output ) = commands.getstatusoutput( cmd )
+        print "Output was: %s" % ( output )
+        if status != 0 or not os.path.exists( tmpfile ):
+            raise Exception( "Error adjusting volume of file %s with command: %s" % ( current, cmd ) )
 
         if not helper:
             shutil.copyfile( tmpfile, self.output_file )
@@ -949,6 +983,9 @@ class Window( object ):
             prior_overlay = "o%s" % idx
 
         #cmd += ' [%s] copy " %s' % ( prior_overlay, tmpfile )
+
+        # Stip off training [o##] ;
+        cmd = cmd[:-(6+len( idx-1 ) )]
         cmd += ' " %s' % ( tmpfile )
         print "Running: %s" % ( cmd )
         ( status, output ) = commands.getstatusoutput( cmd )
@@ -960,7 +997,7 @@ class Window( object ):
 
 
     ### Window method ########################################
-    def get_clip_hash( self, clip, width, height, pan_direction="", pix_fmt="yuv420p" ):
+    def get_clip_hash( self, clip, width, height, pan_direction="", pix_fmt="yuv420p", include_audio=False ):
         '''It can be very time consuming to produce a clip from a video, we
         endeavor here to not do the same work over and over if it's
         not needed.
@@ -968,14 +1005,15 @@ class Window( object ):
         '''
 
         display = self.get_display( clip )
-        clip_name = "%s%s%s%s%s%s%s%s" % ( os.path.abspath( clip.video.filename ), 
-                                           clip.start, 
-                                           clip.end, 
-                                           display.display_style, 
-                                           width, 
-                                           height, 
-                                           pan_direction,
-                                           pix_fmt )
+        clip_name = "%s%s%s%s%s%s%s%s%s" % ( os.path.abspath( clip.video.filename ), 
+                                             clip.start, 
+                                             clip.end, 
+                                             display.display_style, 
+                                             width, 
+                                             height, 
+                                             pan_direction,
+                                             pix_fmt,
+                                             include_audio )
         md5 = hashlib.md5()
         md5.update( clip_name )
         return md5.hexdigest()
@@ -1046,19 +1084,32 @@ class Window( object ):
             for clip_file in clip_files:
                 f.write( "file '%s'\n" % ( clip_file ))
             f.close()
-            if self.original_audio:
-                cmd = "%s -y -f concat -safe 0 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -c:a libfdk_aac %s" % ( FFMPEG, concat_file, self.pix_fmt, concat_vid )
-            else:
-                cmd = "%s -y -f concat -safe 0 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -an %s" % ( FFMPEG, concat_file, self.pix_fmt, concat_vid )
+
+            #if self.original_audio:
+            #    cmd = "%s -y -f concat -safe 0 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -c:a libfdk_aac %s" % ( FFMPEG, concat_file, self.pix_fmt, concat_vid )
+            #else:
+            #    cmd = "%s -y -f concat -safe 0 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -an %s" % ( FFMPEG, concat_file, self.pix_fmt, concat_vid )
+
+            cmd = "%s -y -f concat -safe 0 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -c:a libfdk_aac %s" % ( FFMPEG, concat_file, self.pix_fmt, concat_vid )
+
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
             if status != 0 or not os.path.exists( concat_vid ):
                 raise Exception( "Error producing concatenated file %s with command: %s" % ( concat_vid, cmd ) )
 
+            background_video = Video( background_file )
+            overlay_video = Video( concat_vid )
+
+            audio_clause = ""
+            if overlay_video.channels is None:
+                audio_clause = " [0:a] afifo "
+            else:
+                audio_clause = " [0:a] afifo [a0] ; [1:a] afifo [a1] ; [a0] [a1] amix=inputs=2:duration=longest:dropout_transition=0 "
+
             # Put the result on top of the background_file.
             tmpfile = self.get_next_renderfile()
-            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " [0:v] setpts=PTS-STARTPTS/TB [a] ; [1:v] setpts=PTS-STARTPTS/TB [b] ; [a] [b] overlay=x=0:y=0:eof_action=pass " -t %f %s' % ( FFMPEG, background_file, concat_vid, self.pix_fmt, self.duration, tmpfile )
+            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 -c:a libfdk_aac -filter_complex " [0:v] fifo,setpts=PTS-STARTPTS/TB [a] ; [1:v] fifo,setpts=PTS-STARTPTS/TB [b] ; [a] [b] overlay=x=0:y=0:eof_action=pass ; %s " -t %f %s' % ( FFMPEG, background_file, concat_vid, self.pix_fmt, audio_clause, self.duration, tmpfile )
 
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
@@ -1082,6 +1133,7 @@ class Window( object ):
             include_clause = ""
             scale_clause = ""
             filter_complex = ' -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " ' % ( self.pix_fmt )
+            audio_clips = []
             for overlay_idx in range( overlay_group, min( len( overlays ), overlay_group + self.overlay_batch_concurrency ) ):
                 overlay_start = overlay_timing[overlay_idx][0]
                 overlay_end = overlay_timing[overlay_idx][1]
@@ -1098,7 +1150,17 @@ class Window( object ):
                 ow = 2*int( self.width*scale / 2 )
                 oh = 2*int( overlay.video.height * ow / ( overlay.video.width * 2 ) )
                 ilabel = overlay_idx + 1 - overlay_group
-                filter_complex += " [%d:v] scale=width=%d:height=%d,setpts=PTS-STARTPTS+%f/TB [o%d] ; " % ( ilabel, ow, oh, overlay_start, overlay_idx )
+                filter_complex += " [%d:v] fifo,scale=width=%d:height=%d,setpts=PTS-STARTPTS+%f/TB [o%d] ; " % ( ilabel, ow, oh, overlay_start, overlay_idx )
+                
+                # Only include audio for this clip if the display says to include it.
+                if display.include_audio:
+                    adelay = overlay_start*1000
+
+                    audio_clips.append( {
+                        "ilabel" : ilabel,
+                        "start" : adelay,
+                        "channels" : overlay.get_channels(),
+                    } )
 
                 direction = display.overlay_direction
 
@@ -1115,12 +1177,36 @@ class Window( object ):
                     elif direction == RIGHT:
                         x = "'if( gte(t,%f), W-(t-%f)*%f, NAN)'" % ( overlay_start, overlay_start, float( self.width+ow ) / overlay.get_duration() )
 
-                #filter_complex += ' [%s] [o%d] overlay=x=%s:y=%s:eof_action=pass [t%d] ; ' % ( prior_overlay, overlay_idx, x, y, overlay_idx )
-                filter_complex += ' [%s] [o%d] overlay=x=%s:y=%s [t%d] ; ' % ( prior_overlay, overlay_idx, x, y, overlay_idx )
+                filter_complex += ' [%s] [o%d] overlay=x=%s:y=%s:eof_action=pass [t%d] ; ' % ( prior_overlay, overlay_idx, x, y, overlay_idx )
+                #filter_complex += ' [%s] [o%d] overlay=x=%s:y=%s [t%d] ; ' % ( prior_overlay, overlay_idx, x, y, overlay_idx )
                 prior_overlay = 't%d' % ( overlay_idx )
 
             tmpfile = self.get_next_renderfile()                                          
-            cmd += include_clause + filter_complex + ' [t%s] copy " %s' % ( overlay_idx, tmpfile )
+            #cmd += include_clause + filter_complex + ' [t%s] copy " %s' % ( overlay_idx, tmpfile )
+            # Strip off the trailing [t##] ; of the filter_complex
+            filter_complex = filter_complex[:-(6+len( str( overlay_idx - 1 ) ) )]
+            filter_complex += " [outv] ; "
+            
+            audio_offsets = ""
+            audio_mix = " [0:a] "
+            aindex = 1
+            for aclip in audio_clips:
+                adelay_clause = ""
+                if aclip['start'] > 0:
+                    adelay_clause = ",adelay=" + "|".join( [ str( aclip['start'] ) for x in range( aclip['channels'] ) ] )
+                audio_offsets += " [%d:a] afifo%s [a%d] ; " % ( aclip['ilabel'], adelay_clause, aindex )
+                audio_mix += " [a%d] " % ( aindex )
+                aindex += 1
+            if aindex > 1:
+                audio_clause = audio_offsets + audio_mix + " amix=inputs=%d:duration=longest:dropout_transition=0 [outa] " % ( aindex )
+            else:
+                audio_clause = audio_offsets + audio_mix + " afifo [outa] "
+
+            #else:
+            #    audio_clause = audio_offsets[:-(6+len( str( aindex ) ) )] + " [outa] "
+
+            filter_complex += audio_clause
+            cmd += include_clause + filter_complex + ' " -map "[outv]" -map "[outa]" %s' % ( tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -1226,17 +1312,31 @@ class Window( object ):
          
         # Check the cache for such a clip.
         # If not, produce it and save it in the cache.
-        clip_hash = self.get_clip_hash( clip, self.width, self.height, display.prior_pan, self.pix_fmt ) 
+        clip_hash = self.get_clip_hash( clip=clip, 
+                                        width=self.width, 
+                                        height=self.height, 
+                                        pan_direction=display.prior_pan, 
+                                        pix_fmt=self.pix_fmt, 
+                                        include_audio=display.include_audio ) 
+
         if clip_hash in Window.cache_dict and not self.force:
             print "Cache hit for clip: %s" % ( clip_hash )
             return Window.cache_dict[clip_hash]
         else:
             filename = "%s/%s.mp4" % ( Window.tmpdir, clip_hash )
             
-            if self.original_audio:
-                cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -c:a libfdk_aac %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )
-            else:
-                cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -an %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )   
+            #if self.original_audio:
+            #    cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -c:a libfdk_aac %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )
+            #else:
+            #    cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -an %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )   
+
+            # By default ignore audio.
+            audio_arg = " -an "
+            if display.include_audio:
+                # Include the audio if requested.
+                audio_arg = " -c:a libfdk_aac "
+
+            cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 %s %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, audio_arg, scale_clause, clip.get_duration(), filename )
             
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
