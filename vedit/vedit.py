@@ -468,7 +468,7 @@ class Window( object ):
       this Window within its immediate parent Window, if any, as
       measured from the top left.
 
-    * audio_filename. Optional.  If specified, an audio track to play
+    * audio_file. Optional.  If specified, an audio track to play
       along with the resultant video.
 
     * audio_desc.  Optional.  If provided, text to display over the
@@ -477,7 +477,7 @@ class Window( object ):
     * duration - Optional. If specified the duration of the rendered
       content of this Window.  
   
-      Defaults to the length of the optional audio_filename, or if
+      Defaults to the length of the optional audio_file, or if
       that is not provided then defaults to the maximum duration of
       the rendered clips of this or any child windows.  
 
@@ -665,7 +665,7 @@ class Window( object ):
                                    # shown.
                   z_index = None,
                   watermarks = None,
-                  audio_filename = None,
+                  audio_file = None,
                   audio_desc = '',
                   display = None,
                   output_file = "./output.mp4",
@@ -727,21 +727,21 @@ class Window( object ):
 
         #self.original_audio = original_audio
 
-        if audio_filename is not None:
-            if not os.path.exists( audio_filename ):
-                raise Exception( "No audio found at: %s" % ( audio_filename ) )
+        if audio_file is not None:
+            if not os.path.exists( audio_file ):
+                raise Exception( "No audio found at: %s" % ( audio_file ) )
             else:
-                self.audio_filename = audio_filename
-                ( status, output ) = commands.getstatusoutput( "%s -v quiet -print_format json -show_streams %s" % ( FFPROBE, audio_filename ) )
+                self.audio_file = audio_file
+                ( status, output ) = commands.getstatusoutput( "%s -v quiet -print_format json -show_streams %s" % ( FFPROBE, audio_file ) )
                 audio_info = json.loads( output )
                 for stream in audio_info['streams']:
                     if stream['codec_type'] == 'audio':
                         self.audio_duration = float( stream['duration'] )
-                        self.audio_filename_channels = int( stream['channels'] )
+                        self.audio_file_channels = int( stream['channels'] )
                         break
         else:
-            self.audio_filename = None
-            self.audio_filename_channels = None
+            self.audio_file = None
+            self.audio_file_channels = None
             self.audio_duration = None
 
         self.audio_desc = audio_desc
@@ -751,7 +751,7 @@ class Window( object ):
         # child windows unless it has been explicitly set here, or
         # implicitly set here by the audio_duration.
         if duration is None:
-            if audio_filename is not None:
+            if audio_file is not None:
                 self.duration = self.audio_duration
             else:
                 self.duration = duration
@@ -908,8 +908,6 @@ class Window( object ):
 
         ###### Render All Child Windows ######################
         for window in sorted( self.windows, key=lambda x: x.z_index ):
-            if window.duration is None:
-                window.duration = self.duration
             if window.pix_fmt is None:
                 window.pix_fmt = self.pix_fmt
 
@@ -917,7 +915,7 @@ class Window( object ):
             window_file = window.render( helper=True, audio_channels=audio_channels )
             tmpfile = self.get_next_renderfile()
             
-            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 -ac %d -c:a libfdk_aac -filter_complex " [0:v] fifo [v0] ; [1:v] fifo [v1] ; [v0] [v1] overlay=x=%s:y=%s:eof_action=pass%s [outv] ; [0:a] afifo [a0] ; [1:a] afifo [a1] ; [a0] [a1] amix=inputs=2:duration=longest:dropout_transition=0 [outa] " -map "[outv]" -map "[outa]" -t %f %s' % ( FFMPEG, current, window_file, window.pix_fmt, audio_channels, window.x, window.y, sar_clause, window.duration, tmpfile )
+            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 -ac %d -c:a libfdk_aac -filter_complex " [0:v] fifo [v0] ; [1:v] fifo [v1] ; [v0] [v1] overlay=x=%s:y=%s:eof_action=pass%s [outv] ; [0:a] afifo [a0] ; [1:a] afifo [a1] ; [a0] [a1] amix=inputs=2:duration=longest:dropout_transition=0 [outa] " -map "[outv]" -map "[outa]" -t %f %s' % ( FFMPEG, current, window_file, window.pix_fmt, audio_channels, window.x, window.y, sar_clause, self.duration, tmpfile )
 
 
             log.info( "Running: %s" % ( cmd ) )
@@ -931,12 +929,12 @@ class Window( object ):
             tmpfile = self.add_watermarks( self.watermarks, tmpfile )
 
         ###### Add Audio and Description #####################
-        if self.audio_filename:
+        if self.audio_file:
             audio_tmpfile = None
-            if self.audio_filename_channels != audio_channels:
+            if self.audio_file_channels != audio_channels:
                 # Convert the input audio file to the right number of channels.
                 audio_tmpfile = self.get_next_renderfile()
-                cmd = '%s -i %s -ac %d -c:a libfdk_aac -vn %s' % ( FFMPEG, self.audio_filename, audio_channels, audio_tmpfile )
+                cmd = '%s -i %s -ac %d -c:a libfdk_aac -vn %s' % ( FFMPEG, self.audio_file, audio_channels, audio_tmpfile )
                 log.info( "Running: %s" % ( cmd ) )
                 ( status, output ) = commands.getstatusoutput( cmd )
                 log.debug( "Output was: %s" % ( output ) )
@@ -944,7 +942,7 @@ class Window( object ):
                     raise Exception( "Error converting audio file %s to have %d channels with command: %s\n\nOutput was: %s" % ( audio_tmpfile, audio_channels, cmd, output ) )
 
             if audio_tmpfile is None:
-                audio_tmpfile = self.audio_filename
+                audio_tmpfile = self.audio_file
 
             if self.audio_duration is not None and self.audio_duration == self.duration:
                 audio_fade_start = self.duration
@@ -964,7 +962,7 @@ class Window( object ):
                 f = open( audio_desc_file, 'w' )
                 f.write( self.audio_desc )
                 f.close()
-                filter_clause = " -filter_complex 'drawtext=fontcolor=white:borderw=1:textfile=%s:x=10:y=h-th-10:enable=gt(t\,%f)'%s" % ( audio_desc_file, self.duration - 5, sar_clause )
+                filter_clause = " -filter_complex 'drawtext=fontcolor=white:fontsize=24:borderw=1:textfile=%s:x=10:y=h-th-10:enable=gt(t\,%f)'%s" % ( audio_desc_file, self.duration - 5, sar_clause )
 
             cmd = '%s -y -i %s -i %s -ac %d -pix_fmt %s %s %s -t %f %s' % ( FFMPEG, current, audio_tmpfile, audio_channels, self.pix_fmt, afade_clause, filter_clause, self.duration, tmpfile )
             log.info( "Running: %s" % ( cmd ) )
@@ -1140,7 +1138,7 @@ class Window( object ):
                 clip_files.append( filename )
         
         # Concatenate all clip files.
-        if len( clip_files ):
+        if len( clip_files ) > 1:
             concat_vid = self.get_next_renderfile()
             concat_file = "%s/concat-%s.txt" % ( Window.tmpdir, str( uuid.uuid4() ) )
             f = open( concat_file, 'w' )
@@ -1174,7 +1172,8 @@ class Window( object ):
             log.debug( "Output was: %s" % ( output ) )
             if status != 0 or not os.path.exists( tmpfile ):
                 raise Exception( "Error producing concatenated clip file %s with command: %s\n\nOutput was: %s" % ( tmpfile, cmd, output ) )
-
+        elif len( clip_files ) == 1:
+            tmpfile = clip_files[0]
         else:
             tmpfile = background_file
 
@@ -1786,7 +1785,7 @@ if __name__ == '__main__':
     c8 = Clip( v2, 3, 5 )
 
     # Define some windows.
-    w0 = Window( width=1280, height=1024, audio_filename='/wintmp/music/human405.m4a', duration=10 )
+    w0 = Window( width=1280, height=1024, audio_file='/wintmp/music/human405.m4a', duration=10 )
     w1 = Window( display = d, height=1024, width=720 )
     w2 = Window( width=200, height=200, x=520, y=520 )
     w3 = Window( display=Display( display_style=OVERLAY, overlay_direction=RIGHT ), bgcolor='White', width=560, height=512, x=720 )
