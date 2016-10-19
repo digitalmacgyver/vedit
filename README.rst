@@ -47,7 +47,7 @@ Table of Contents
 - `Module Concepts`_
 
   - `Windows`_
-  - `Display`_
+  - `Display Configuration`_
   - `Videos and Clips`_
   - `Watermarks`_
   - `Audio`_
