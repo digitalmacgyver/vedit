@@ -104,6 +104,7 @@ Example 1: Clip 2 seconds out of the middle of a video
     window.render()
     log.info( "Output file at %s" % ( output_file ) )
 
+Back to `Table of Contents`_
 
 Example 2: Resize a video with PAD, CROP, or PAN
 ----------
@@ -143,6 +144,8 @@ Example 2: Resize a video with PAD, CROP, or PAN
     window.render()
     log.info( "Pan output file at: %s" % ( pan_output ) )
 
+Back to `Table of Contents`_
+
 Example 3: Put two videos next to each other
 ----------
 ::
@@ -176,6 +179,8 @@ Example 3: Put two videos next to each other
     base_window.windows = [ clip_1_window, clip_2_window ]
     base_window.render()
     log.info( "Side by side output is at: %s" % ( output_file ) )
+
+Back to `Table of Contents`_
 
 Example 4: Replace the audio track of a video
 ---------
@@ -213,6 +218,7 @@ Example 4: Replace the audio track of a video
     window.render()
     log.info( "Replaced audio in output: %s" % ( output_file ) )
 
+Back to `Table of Contents`_
 
 Example 5: Overlay videos on top of other videos
 ---------
@@ -220,6 +226,7 @@ Example 5: Overlay videos on top of other videos
 
     code
 
+Back to `Table of Contents`_
 
 Example 6: Cascade overlayed videos and images on top of a base video or image
 ---------
@@ -227,6 +234,7 @@ Example 6: Cascade overlayed videos and images on top of a base video or image
 
     code
 
+Back to `Table of Contents`_
 
 Example 7: Add an overlay image, such as a watermark
 ---------
@@ -234,38 +242,49 @@ Example 7: Add an overlay image, such as a watermark
 
     code
 
+Back to `Table of Contents`_
 
 Module Concepts
 ===============
 
 Module Concepts
 
+Back to `Table of Contents`_
 
 Display Configuration
 -------
 
 Display Configuration
 
+Back to `Table of Contents`_
+
 Windows
 -------
 
 Windows
+
+Back to `Table of Contents`_
 
 Videos and Clips
 ----------------
 
 Videos and Clips
 
+Back to `Table of Contents`_
+
 Watermarks
 ----------
 
 Watermarks
+
+Back to `Table of Contents`_
 
 Audio
 -----
 
 Audio
 
+Back to `Table of Contents`_
 
 Logging Output
 ==============
@@ -281,15 +300,21 @@ info
 warn
   Only notices where vedit is making some determination about what to do with ambiguous inputs
 
+Back to `Table of Contents`_
+
 Getting Help
 ============
 
 File an issue on Github for this project https://github.com/digitalmacgyver/vedit/issues
 
+Back to `Table of Contents`_
+
 Contributing
 ============
 
 Feel free to fork and issue a pull request at: https://github.com/digitalmacgyver/vedit
+
+Back to `Table of Contents`_
 
 Caching Behavior
 ================
@@ -322,6 +347,7 @@ of an input filename on the filesystem have changed), the cache should
 be cleared by calling the static clear_cache method of the Window
 class: ``Window.clear_cache()``
 
+Back to `Table of Contents`_
 
 Odds and Ends
 =============
@@ -335,3 +361,5 @@ Odds and Ends
 - The output will be encoded with the H.264 codec.
 - The quality of the output video relative to the inputs is set by the ffmpeg -crf option with an argument of 16, which should be visually lossless.
 - If all input clips have the same number of audio channels, those channels are in the output.  In any other scenario the resultant video will have a single channel (mono) audio stream.
+
+Back to `Table of Contents`_
