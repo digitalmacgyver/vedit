@@ -1,6 +1,34 @@
+vedit Overview
+==============
 
+vedit is a Python library that simplifies editing and combining video files using ``ffmpeg``.
 
-Fun utility for combining various video clips with FFMPEG.
+Examples of the sorts of things vedit makes easy include:
+
+- Extracting a clip from a longer video
+- Combining videos or clips together by attaching them end to end
+- Composing videos together, for example side by side or overlayed on top of one another
+- Changing the resolution of a video and cropping or padding the video
+- Overlaying images onto a video
+- Adding an audio track (like a song) to a video
+
+These types of tasks should be simple enough with ffmpeg, however in practice there are numerous stumbling blocks. vedit makes the above sorts of video manipulations easy by automatically handling videos with:
+
+- Different resolutions
+- Different sample aspect ratios
+- Different pixel formats
+- Different frame rates
+- Different audio streams and channels
+
+Before You Begin
+================
+
+vedit depends on the ``ffmpeg`` program from the FFmpeg_ project, and on the libx264 video codec and the libfdk_aac audio codec, for example by configuring ``ffmpeg`` for compilation with:
+
+    ./configure --enable-gpl --enable-libx264 --enable-nonfree --enable-libfdk-aac
+
+.. _FFmpeg: https://ffmpeg.org/
+
 
 For each window, the base most layer will be the bgimage_file (if specified) 
 
