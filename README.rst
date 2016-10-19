@@ -93,7 +93,7 @@ Example 1: Clip 2 seconds out of the middle of a video
     log.info( "Output file at %s" % ( output_file ) )
 
 
-.. _`Example2`:
+.. _`Example 2`:
 Example 2: Resize a video with PAD, CROP, or PAN
 ----------
 ::
@@ -132,7 +132,7 @@ Example 2: Resize a video with PAD, CROP, or PAN
     window.render()
     log.info( "Pan output file at: %s" % ( pan_output ) )
 
-.. _`Example3`:
+.. _`Example 3`:
 Example 2: Put two videos next to each other
 ----------
 ::
@@ -189,11 +189,11 @@ Example 4: Replace the audio track of a video
 
     # Let's make a version where we attribute the audio with some text.
     song_attribution = '''This video features the song:
-Chuckie Vs Hardwell Vs Sandro Silva Vs Cedric & Quintino
-EPIC CLARITY JUMP- (NC MASHUP) LIVE
-By: NICOLE CHEN
-Available under under a Creative Commons License:
-http://creativecommons.org/licenses/by/3.0/ license'''
+    Chuckie Vs Hardwell Vs Sandro Silva Vs Cedric & Quintino
+    EPIC CLARITY JUMP- (NC MASHUP) LIVE
+    By: NICOLE CHEN
+    Available under under a Creative Commons License:
+    http://creativecommons.org/licenses/by/3.0/ license'''
 
     output_file = "./example_output/example04-attributed.mp4"
     window = vedit.Window( audio_file="./examples/a2.mp4", 
