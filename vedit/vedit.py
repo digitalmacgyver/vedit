@@ -3,6 +3,8 @@
 '''Utility for extracting clips from videos, and composing clips
 together into arbitrary nested "windows" in an output.
 
+Documentation at: https://github.com/digitalmacgyver/vedit
+
 This module requires the ffmpeg binary from the FFmpeg project at
 https://ffmpeg.org/
 
@@ -26,6 +28,7 @@ import pickle
 import random
 import re
 import shutil
+import tempfile
 import uuid
 
 log = logging.getLogger(__name__)
@@ -298,9 +301,13 @@ class Video( object ):
         else:
             self.filename = filename
 
+        file_info = os.stat( filename )
+
         # Check out static cache of Video data to see if we know about
         # this file already.
-        if filename in Video.videos:
+        if filename in Video.videos and file_info.st_size == Video.videos[filename]['st_size'] and file_info.st_mtime == Video.videos[filename]['st_mtime']:
+            self.st_size = file_info.st_size
+            self.st_mtime = file_info.st_mtime
             self.width = Video.videos[filename]['width']
             self.height = Video.videos[filename]['height']
             self.duration = Video.videos[filename]['duration']
@@ -334,12 +341,17 @@ class Video( object ):
                 if stream['codec_type'] == 'audio':
                     self.channels = int( stream['channels'] )
 
+            self.st_size = file_info.st_size
+            self.st_mtime = file_info.st_mtime
+
             Video.videos[filename] = { 'width'    : self.width,
                                        'height'   : self.height,
                                        'duration' : self.duration,
                                        'sample_aspect_ratio' : self.sample_aspect_ratio,
                                        'pix_fmt'  : self.pix_fmt,
-                                       'channels' : self.channels }
+                                       'channels' : self.channels,
+                                       'st_size'  : self.st_size,
+                                       'st_mtime' : self.st_mtime }
 
     def get_width( self ):
         return self.width
@@ -563,7 +575,7 @@ class Window( object ):
     # increment in order of created Window objects.
     z = 0
 
-    tmpdir = '/tmp/vsum/%s/' % ( getpass.getuser() )
+    tmpdir = "%s/%s/vedit/" % ( tempfile.gettempdir(), getpass.getuser() )
     cache_dict_file = 'cachedb'
     cache_dict = {}
 
@@ -1068,8 +1080,15 @@ class Window( object ):
 
         '''
 
+        filename = os.path.abspath( clip.video.filename )
+
+        # Check if the underlying file has changed for a given path.
+        file_info = os.stat( filename )
+        file_size = file_info.st_size
+        file_mtime = file_info.st_mtime
+
         display = self.get_display( clip )
-        clip_name = "%s%s%s%s%s%s%s%s%s" % ( os.path.abspath( clip.video.filename ), 
+        clip_name = "%s%s%s%s%s%s%s%s%s%s%s" % ( filename,
                                              clip.start, 
                                              clip.end, 
                                              display.display_style, 
@@ -1077,7 +1096,9 @@ class Window( object ):
                                              height, 
                                              pan_direction,
                                              pix_fmt,
-                                             include_audio )
+                                             include_audio,
+                                             file_size,
+                                             file_mtime )
         md5 = hashlib.md5()
         md5.update( clip_name )
         return md5.hexdigest()
@@ -1257,7 +1278,7 @@ class Window( object ):
                 audio_mix += " [a%d] " % ( aindex )
                 aindex += 1
             if aindex > 1:
-                audio_clause = audio_offsets + audio_mix + " amix=inputs=%d:duration=longest:dropout_transition=5 [outa] " % ( aindex, aindex )
+                audio_clause = audio_offsets + audio_mix + " amix=inputs=%d:duration=longest:dropout_transition=5 [outa] " % ( aindex )
             else:
                 audio_clause = audio_offsets + audio_mix + " afifo [outa] "
 
@@ -1773,7 +1794,7 @@ def gen_background_video( duration,
                     height       = height,
                     bgcolor      = bgcolor,
                     bgimage_file = bgimage_file,
-                    output_file  = output_File )
+                    output_file  = output_file )
 
     return w.render()
 

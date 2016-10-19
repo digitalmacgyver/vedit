@@ -27,15 +27,15 @@ Assuming you have ``pip`` installed:
 
     pip install vedit
 
-However, there is nothing in the package that is special, and no Python
-dependencies other than a 2.7 interpreter with the standard library,
-you can just download this repository and put the ``vedit`` directory
-in your Python path.
+However, there is nothing in the package that is special, and no
+Python dependencies other than a Python 2.7 interpreter with the
+standard library, you can just download this repository and put the
+``vedit`` directory in your Python path.
 
 Before You Begin
 ================
 
-vedit depends on the ``ffmpeg`` program from the FFmpeg_ project, and on the libx264 video codec and the libfdk_aac audio codec, for example by configuring ``ffmpeg`` for compilation with:
+vedit depends on the ``ffmpeg`` and ``ffprobe`` programs from the FFmpeg_ project, and on the libx264 video codec and the libfdk_aac audio codec, for example by configuring ``ffmpeg`` for compilation with:
 
     ./configure --enable-gpl --enable-libx264 --enable-nonfree --enable-libfdk-aac --enable-libfreetype --enable-libfontconfig
 
@@ -93,6 +93,8 @@ Example 1: Clip 2 seconds out of the middle of a video
 ---------
 
 Link to example input: `examples/testpattern.mp4`_
+
+Link2 to example input: `examples/testpattern.mp4 2 <examples/testpattern.mp4>`_
 
 Link to example output: https://youtu.be/FEr6WMUx_4A
 
