@@ -49,6 +49,9 @@ Table of Contents
 - `Examples`_
 
   - `Example 1: Clip 2 seconds out of the middle of a video`_
+  - `Example 2: Resize a video with PAD, CROP, or PAN`_
+
+
   - `Example 1`_: Clip 2 seconds out of the middle of a video
   - `Example 2`_: Resize a video with PAD, CROP, or PAN
   - `Example 3`_: Put two videos next to each other
@@ -105,7 +108,6 @@ Example 1: Clip 2 seconds out of the middle of a video
     log.info( "Output file at %s" % ( output_file ) )
 
 
-.. _`Example 2`:
 Example 2: Resize a video with PAD, CROP, or PAN
 ----------
 ::
