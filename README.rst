@@ -60,7 +60,7 @@ All the examples below begin with the following boilerplate: ::
 
 Example 1: Clip 2 seconds out of the middle of a video
 ---------
-.. _`Example 1`
+.. _`Example 1`:
 
 Example 1
 
