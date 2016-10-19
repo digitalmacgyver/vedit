@@ -20,6 +20,18 @@ These types of tasks should be simple enough with ffmpeg, however in practice th
 - Different frame rates
 - Different audio streams and channels
 
+Instillation
+============
+
+Assuming you have ``pip`` installed:
+
+    pip install vedit
+
+However, there is nothing in the package that is special, and no Python
+dependencies other than a 2.7 interpreter with the standard library,
+you can just download this repository and put the ``vedit`` directory
+in your Python path.
+
 Before You Begin
 ================
 
@@ -36,7 +48,7 @@ Table of Contents
 
 - `Examples`_
 
-  - `Example1`_: Clip 2 seconds out of the middle of a video
+  - `Example 1`_: Clip 2 seconds out of the middle of a video
   - `Example 2`_: Resize a video with PAD, CROP, or PAN
   - `Example 3`_: Put two videos next to each other
   - `Example 4`_: Replace the audio track of a video
@@ -76,7 +88,7 @@ All the examples below begin with the following boilerplate, and assume the ``./
   log.setLevel( logging.DEBUG )
    
 
-.. _Example1:
+.. _Example 1:
 
 
 Example 1: Clip 2 seconds out of the middle of a video
