@@ -32,10 +32,22 @@ vedit depends on the ``ffmpeg`` program from the FFmpeg_ project, and on the lib
 Table of Contents
 =================
 
+- `Examples`_
+  - `Example 1`_
 - `Getting Help`_
 - `Contributing`_
 - `Caching Behavior`_
 - `Odds and Ends`_
+
+Examples
+========
+
+Foo
+
+Example 1
+---------
+
+Bar
 
 Getting Help
 ============
