@@ -6,13 +6,13 @@ vedit is a Python library that simplifies editing and combining video files usin
 Examples of the sorts of things vedit makes easy include:
 
 - Extracting a clip from a longer video
-- Combining videos or clips together by attaching them end to end
-- Composing videos together, for example side by side or overlayed on top of one another
-- Changing the resolution of a video and cropping or padding the video
+- Combining videos or clips together by concatenating them end to end
+- Composing videos together, for example side by side or overlayed on top of a background image
+- Changing the resolution of a video and cropping or padding a video to change its aspect ratio
 - Overlaying images onto a video
 - Adding an audio track (like a song) to a video
 
-These types of tasks should be simple enough with ffmpeg, however in practice there are numerous stumbling blocks. vedit makes the above sorts of video manipulations easy by automatically handling videos with:
+There are numerous stumbling blocks to these tasks - vedit makes the above things easy by automatically handling videos with:
 
 - Different resolutions
 - Different sample aspect ratios
@@ -20,7 +20,7 @@ These types of tasks should be simple enough with ffmpeg, however in practice th
 - Different frame rates
 - Different audio streams and channels
 
-Instillation
+Installation
 ============
 
 Assuming you have ``pip`` installed:
@@ -332,7 +332,7 @@ collisions in the cache.
 If two Clips have the same elements here, they are assumed to be the
 same in the Cache:
 
-- Absolute path to the filename from the undelying Video object
+- Absolute path to the filename from the underlying Video object
 - Clip start time
 - Clip end time
 - The ``display_style`` of the Display for this Clip as being rendered in this Window.
@@ -357,7 +357,7 @@ Odds and Ends
 - The output Sample Aspect Ratio (SAR) for a Window can be set.  All inputs and outputs are assumed to have the same SAR.  If not set the SAR of the Video input will be used, or 1:1 will be used if there is no Video input.
 - Some video files report strange Sample Aspect Ratio (SAR) via ``ffprobe``. The nonsense SAR value of 0:1 is assumed to be 1:1.  SAR ratios between 0.9 and 1.1 are assumed to be 1:1. 
 - The pixel format of the output can be set, the default is yuv420p.
-- The output video framerate will be set to 30000/1001
+- The output video frame rate will be set to 30000/1001
 - The output will be encoded with the H.264 codec.
 - The quality of the output video relative to the inputs is set by the ffmpeg -crf option with an argument of 16, which should be visually lossless.
 - If all input clips have the same number of audio channels, those channels are in the output.  In any other scenario the resultant video will have a single channel (mono) audio stream.

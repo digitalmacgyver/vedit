@@ -135,8 +135,96 @@ http://creativecommons.org/licenses/by/3.0/ license'''
 
     return
               
+def example05():
+    '''Ovarlay videos on top of other videos.'''
+
+    # Let's overlay two smaller windows on top of a base video.
+    base_video = vedit.Video( "./examples/i030.mp4" )
+    base_clip = vedit.Clip( video=base_video )
+    output_file = "./example_output/example05.mp4"
+    # Use the default width, height, and display parameters:
+    # 1280x1024, which happens to be the size of this input.
+    base_window = vedit.Window( clips = [ base_clip ],
+                                output_file=output_file )
+
+    # We'll create two smaller windows, each 1/4 the size of the
+    # base_window, and position them towards the top left, and bottom
+    # right of the base window.
+    overlay_window1 = vedit.Window( width=base_window.width/4, height=base_window.height/4,
+                                    x=base_window.width/8, y=base_window.height/8 )
+    overlay_window2 = vedit.Window( width=base_window.width/4, height=base_window.height/4,
+                                    x=5*base_window.width/8, y=5*base_window.height/8 )
+    
+    # Now let's put some clips in each of the overlay windows.
+    window_1_clips = [
+        vedit.Clip( video=vedit.Video( "./examples/d006.mp4" ) ),
+        vedit.Clip( video=vedit.Video( "./examples/d007.mp4" ) ),
+    ]
+    window_2_clips = [
+        vedit.Clip( video=vedit.Video( "./examples/p006.mp4" ) ),
+        vedit.Clip( video=vedit.Video( "./examples/p007.mp4" ) ),
+        vedit.Clip( video=vedit.Video( "./examples/p008.mp4" ) ),
+    ]
+
+    # Now let's embed the clips in the windows, and the overlay
+    # windows in our base_window and render.
+    overlay_window1.clips = window_1_clips
+    overlay_window2.clips = window_2_clips
+    base_window.windows = [ overlay_window1, overlay_window2 ]
+    base_window.render()
+    log.info( "Made multi-video composition at: %s" % ( output_file ) )
+
+    # Well - the last video looks OK, but it sounds terrible - the
+    # audio from all the videos are being mixed together.
+    #
+    # Let's try again but exclude audio from everything but the base
+    # video.
+    output_file = "./example_output/example05-single-audio.mp4"
+    no_audio_display_config = vedit.Display( include_audio=False )
+    no_audio_overlay_window1 = vedit.Window( width=base_window.width/4, height=base_window.height/4,
+                                    x=base_window.width/8, y=base_window.height/8,
+                                    display=no_audio_display_config )
+    no_audio_overlay_window2 = vedit.Window( width=base_window.width/4, height=base_window.height/4,
+                                    x=5*base_window.width/8, y=5*base_window.height/8,
+                                    display=no_audio_display_config )
+    
+    # Now let's embed the clips in the windows, and the overlay
+    # windows in our base_window and render.
+    no_audio_overlay_window1.clips = window_1_clips
+    no_audio_overlay_window2.clips = window_2_clips
+    base_window.output_file = output_file
+    base_window.windows = [ no_audio_overlay_window1, no_audio_overlay_window2 ]
+    base_window.render()
+    log.info( "Made multi-video composition with single audio track at: %s" % ( output_file ) )
+
+example_files = [
+    'a1.mp4',
+    'a2.mp4',
+    'a3.mp4',
+    'cat01.jpg',
+    'cat02.jpg',
+    'cat03.jpg',
+    'cat04.jpg',
+    'cat05.jpg',
+    'cat06.jpg',
+    'cat07.jpg',
+    'dog01.jpg',
+    'dog02.jpg',
+    'dog03.jpg',
+    'dog04.jpg',
+    'dog05.jpg',
+    'dog06.jpg',
+    'dog07.jpg',
+    'dog08.jpg',
+    'testpattern.mp4',
+]
+
 if __name__ == "__main__":
-    # DEBUG - check the existence of the demo files!!!
+    # Check if the example files are installed where we expect them.
+    example_dir = "./examples/"
+    for example_file in example_files:
+        if not os.path.exists( example_dir + example_file ):
+            raise Exception( "Error - could not find example file: %s - perhaps you do not have them installed?  They are available in the GitHub repository for this project at: https://github.com/digitalmacgyver/vedit" % ( example_dir + example_file ) )
 
     try:
         os.mkdir( "./example_output" )
@@ -146,4 +234,5 @@ if __name__ == "__main__":
     #example01()
     #example02()
     #example03()
-    example04()
+    #example04()
+    example05()
