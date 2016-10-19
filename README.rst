@@ -88,8 +88,11 @@ All the examples below begin with the following boilerplate, and assume the ``./
   log = logging.getLogger()
   log.setLevel( logging.DEBUG )
    
+whyisnt
 
 .. _example:
+
+thisworking
 
 
 Example 1: Clip 2 seconds out of the middle of a video
