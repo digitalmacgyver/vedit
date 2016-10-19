@@ -34,8 +34,9 @@ Table of Contents
 
 - `Examples`_
 
-  - `Example 1`_
+  - `Example 1`_: Clip 2 seconds out of the middle of a video 
 
+- `Logging Output`_
 - `Getting Help`_
 - `Contributing`_
 - `Caching Behavior`_
@@ -44,12 +45,40 @@ Table of Contents
 Examples
 ========
 
-Foo
+All the examples below assume that FFmpeg_ is installed as described in `Before You Begin`_.
+
+All the examples below begin with the following boilerplate: ::
+
+  #!/usr/bin/env python
+  
+  import vedit
+  import logging
+  logging.basicConfig()
+  log = logging.getLogger()
+  log.setLevel( logging.DEBUG )
+   
+
+Example 1: Clip 2 seconds out of the middle of a video
+---------
+.. _`Example 1`
 
 Example 1
----------
 
-Bar
+
+
+Logging Output
+==============
+
+vedit produces lots of output through Python's logging framework.  Messages are at these levels:
+
+debug
+  Everything, including command output from ``ffmpeg``
+
+info
+  Step by step notifications of commands run, but curtailing the output
+ 
+warn
+  Only notices where vedit is making some determination about what to do with ambiguous inputs
 
 Getting Help
 ============
