@@ -92,9 +92,7 @@ Back to `Table of Contents`_
 Example 1: Clip 2 seconds out of the middle of a video
 ---------
 
-Link to example input: `examples/testpattern.mp4`_
-
-Link2 to example input: `examples/testpattern.mp4 2 <examples/testpattern.mp4>`_
+Link to input for example: https://youtu.be/9ul6rWAewd4
 
 Link to example output: https://youtu.be/FEr6WMUx_4A
 
@@ -115,6 +113,8 @@ Back to `Table of Contents`_
 
 Example 2: Resize a video with PAD, CROP, or PAN
 ----------
+
+Link to source input: https://youtu.be/Qmbgrr6WJEY
 
 Links to example outputs:
 
