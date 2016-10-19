@@ -40,12 +40,12 @@ Table of Contents
 Getting Help
 ============
 
-You may either:
+File an issue on Github for this project https://github.com/digitalmacgyver/vedit/issues
 
-1. File an `issue on Github`_
+Contributing
+============
 
-.. _`issue on Github`: https://github.com/digitalmacgyver/vedit/issues
-
+Feel free to fork and issue a pull request at: https://github.com/digitalmacgyver/vedit
 
 Caching Behavior
 ================
