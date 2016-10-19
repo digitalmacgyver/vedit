@@ -43,14 +43,11 @@ vedit depends on the ``ffmpeg`` program from the FFmpeg_ project, and on the lib
 
 .. _FFmpeg: https://ffmpeg.org/
 
-This however example_ works.
-
 Table of Contents
 =================
 
 - `Examples`_
 
-  - `example`_
   - `Example 1`_: Clip 2 seconds out of the middle of a video
   - `Example 2`_: Resize a video with PAD, CROP, or PAN
   - `Example 3`_: Put two videos next to each other
@@ -90,12 +87,8 @@ All the examples below begin with the following boilerplate, and assume the ``./
   log = logging.getLogger()
   log.setLevel( logging.DEBUG )
    
-whyisnt
 
-.. _example:
-
-thisworking
-
+.. _Example 1:
 
 Example 1: Clip 2 seconds out of the middle of a video
 ---------
