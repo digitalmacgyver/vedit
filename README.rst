@@ -48,7 +48,7 @@ Table of Contents
 
 - `Examples`_
 
-  - `example`
+  - `example`_
   - `Example 1`_: Clip 2 seconds out of the middle of a video
   - `Example 2`_: Resize a video with PAD, CROP, or PAN
   - `Example 3`_: Put two videos next to each other
