@@ -50,15 +50,11 @@ Table of Contents
 
   - `Example 1: Clip 2 seconds out of the middle of a video`_
   - `Example 2: Resize a video with PAD, CROP, or PAN`_
-
-
-  - `Example 1`_: Clip 2 seconds out of the middle of a video
-  - `Example 2`_: Resize a video with PAD, CROP, or PAN
-  - `Example 3`_: Put two videos next to each other
-  - `Example 4`_: Replace the audio track of a video
-  - `Example 5`_: Overlay videos on top of other videos
-  - `Example 6`_: Cascade overlayed videos and images on top of a base video or image
-  - `Example 7`_: Add an overlay image, such as a watermark
+  - `Example 3: Put two videos next to each other`_
+  - `Example 4: Replace the audio track of a video`_
+  - `Example 5: Overlay videos on top of other videos`_
+  - `Example 6: Cascade overlayed videos and images on top of a base video or image`_
+  - `Example 7: Add an overlay image, such as a watermark`_
 
 - `Module Concepts`_
 
@@ -146,8 +142,7 @@ Example 2: Resize a video with PAD, CROP, or PAN
     window.render()
     log.info( "Pan output file at: %s" % ( pan_output ) )
 
-.. _`Example 3`:
-Example 2: Put two videos next to each other
+Example 3: Put two videos next to each other
 ----------
 ::
 
@@ -181,7 +176,6 @@ Example 2: Put two videos next to each other
     base_window.render()
     log.info( "Side by side output is at: %s" % ( output_file ) )
 
-.. _`Example 4`:
 Example 4: Replace the audio track of a video
 ---------
 ::
@@ -219,7 +213,6 @@ Example 4: Replace the audio track of a video
     log.info( "Replaced audio in output: %s" % ( output_file ) )
 
 
-.. _`Example 5`:
 Example 5: Overlay videos on top of other videos
 ---------
 ::
@@ -227,7 +220,6 @@ Example 5: Overlay videos on top of other videos
     code
 
 
-.. _`Example 6`:
 Example 6: Cascade overlayed videos and images on top of a base video or image
 ---------
 ::
@@ -235,7 +227,6 @@ Example 6: Cascade overlayed videos and images on top of a base video or image
     code
 
 
-.. _`Example 7`:
 Example 7: Add an overlay image, such as a watermark
 ---------
 ::
