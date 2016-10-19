@@ -92,7 +92,8 @@ Back to `Table of Contents`_
 Example 1: Clip 2 seconds out of the middle of a video
 ---------
 
-Link to example input: `./examples/testpattern.mp4`_
+Link to example input: `examples/testpattern.mp4`_
+
 Link to example output: https://youtu.be/FEr6WMUx_4A
 
 ::
