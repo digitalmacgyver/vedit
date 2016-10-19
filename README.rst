@@ -88,7 +88,7 @@ All the examples below begin with the following boilerplate, and assume the ``./
   log.setLevel( logging.DEBUG )
    
 
-.. _Example 1:
+.. _Example 1: https://www.google.com/
 
 
 Example 1: Clip 2 seconds out of the middle of a video
