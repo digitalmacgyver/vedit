@@ -404,7 +404,69 @@ Example output: https://youtu.be/1PrADMtqdRU
 
 ::
 
-    code
+    import glob
+
+    # Let's make our background an image with a song.
+    output_file = "./example_output/example07.mp4"
+    dog_background = vedit.Window( bgimage_file="./examples/dog03.jpg",
+                                   width=960, #The dimensions of this image
+                                   height=640,
+                                   duration=45,
+                                   audio_file="./examples/a3.mp4",
+                                   output_file=output_file )
+    
+    # Let's put two windows onto this image, one 16:9, and one 9:16.
+    horizontal_window = vedit.Window( width = 214,
+                                     height = 120,
+                                     x = (960/2-214)/2, # Center it horizontally on the left half.
+                                     y = 80, 
+                                     display=vedit.Display( include_audio=False, display_style=vedit.CROP ) )
+    vertical_window = vedit.Window( width=120,
+                                    height=214,
+                                    x = 740,
+                                    y = (640-214)/2, # Center it vertically.
+                                    display=vedit.Display( include_audio=False, display_style=vedit.PAN ) )
+
+    # Let's let the system distribute a bunch of our 3 second clips
+    # among the horizontal and vertical windows automatically.
+    video_clips = []
+    for video_file in glob.glob( "./examples/*00[5-9].mp4" ):
+        video_clips.append( vedit.Clip( end=3, video=vedit.Video( video_file ) ) )
+
+    # With these options this will randomize the input clips amongst
+    # the two windows, and keep recycling them until the result is 45
+    # seconds long.
+    vedit.distribute_clips( clips=video_clips, 
+                            windows=[ horizontal_window, vertical_window ],
+                            min_duration=45,
+                            randomize_clips=True )
+
+    # Add the overlay windows to the background.
+    dog_background.windows = [ horizontal_window, vertical_window ]
+
+    # Let's set up a watermark image to show over the front and end of
+    # out video. The transparent01.png watermark image is 160x160
+    # pixels.
+    #
+    # Let's put it in the top left for the first 10 seconds.
+    front_watermark = vedit.Watermark( filename="./examples/transparent01.png",
+                                       x=0,
+                                       y=0,
+                                       fade_out_start=7,
+                                       fade_out_duration=3 )
+    # Let's put it in the bottom right for the last 15 seconds.
+    back_watermark = vedit.Watermark( filename="./examples/transparent01.png",
+                                      x=dog_background.width-160,
+                                      y=dog_background.height-160,
+                                      fade_in_start=-15, # Negative values are times from the end of the video.
+                                      fade_in_duration=5 )
+
+    # Add watermarks to the background.
+    dog_background.watermarks = [ front_watermark, back_watermark ]
+
+    dog_background.render()
+    log.info( "Random clips over static image with watermarks at: %s" % ( output_file ) )
+
 
 Back to `Table of Contents`_
 
