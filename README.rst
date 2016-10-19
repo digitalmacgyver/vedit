@@ -1,6 +1,8 @@
 vedit Overview
 ================================================================================
 
+Project homepage at: https://github.com/digitalmacgyver/vedit
+
 vedit is a Python library that simplifies editing and combining video files using ``ffmpeg``.
 
 Examples of the sorts of things vedit makes easy include:
