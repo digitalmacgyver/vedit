@@ -159,8 +159,8 @@ def example05():
     
     # Now let's put some clips in each of the overlay windows.
     window_1_clips = [
-        vedit.Clip( video=vedit.Video( "./examples/d007.mp4" ) ),
         vedit.Clip( video=vedit.Video( "./examples/d006.mp4" ) ),
+        vedit.Clip( video=vedit.Video( "./examples/d007.mp4" ) ),
     ]
     window_2_clips = [
         vedit.Clip( video=vedit.Video( "./examples/p006.mp4" ) ),
