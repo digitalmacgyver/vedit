@@ -36,7 +36,7 @@ Table of Contents
 
 - `Examples`_
 
-  - `Example 1`_: Clip 2 seconds out of the middle of a video
+  - `Example1`_: Clip 2 seconds out of the middle of a video
   - `Example 2`_: Resize a video with PAD, CROP, or PAN
   - `Example 3`_: Put two videos next to each other
   - `Example 4`_: Replace the audio track of a video
@@ -76,7 +76,7 @@ All the examples below begin with the following boilerplate, and assume the ``./
   log.setLevel( logging.DEBUG )
    
 
-.. _Example 1:
+.. _Example1:
 
 
 Example 1: Clip 2 seconds out of the middle of a video
