@@ -237,7 +237,7 @@ Module Concepts
 Module Concepts
 
 
-Display Configuation
+Display Configuration
 -------
 
 Display Configuration
