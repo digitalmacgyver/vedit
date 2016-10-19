@@ -620,7 +620,7 @@ class Window( object ):
     def __init__( self,
                   windows = None,
                   clips = None,
-                  bgcolor = 'Black'
+                  bgcolor = 'Black',
 
                   # For windows with no clips, they can optionally
                   # place an image on top of their bgcolor.  The image
