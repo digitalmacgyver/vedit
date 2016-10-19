@@ -62,6 +62,7 @@ All the examples below begin with the following boilerplate: ::
 Example 1: Clip 2 seconds out of the middle of a video
 ---------
 ::
+
     log.info( "Clipping 2 seconds out of source video from 1.5 seconds to 3.5 seconds." )
     source = vedit.Video( "./examples/test_pattern.mp4" )
     clip = vedit.Clip( video=source, start=1.5, end=3.5 )
