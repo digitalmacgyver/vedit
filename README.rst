@@ -23,14 +23,11 @@ These types of tasks should be simple enough with ffmpeg, however in practice th
 Before You Begin
 ================
 
-vedit depends on the ``ffmpeg`` program from the |FFmpeg| project, and on the libx264 video codec and the libfdk_aac audio codec, for example by configuring ``ffmpeg`` for compilation with:
+vedit depends on the ``ffmpeg`` program from the FFmpeg_ project, and on the libx264 video codec and the libfdk_aac audio codec, for example by configuring ``ffmpeg`` for compilation with:
 
     ./configure --enable-gpl --enable-libx264 --enable-nonfree --enable-libfdk-aac
 
-.. |FFmpeg| raw:: html
-
-   <a href="https://ffmpeg.org/" target="_blank">FFmpeg</a>
-
+.. _FFmpeg: https://ffmpeg.org/
 
 For each window, the base most layer will be the bgimage_file (if specified) 
 
