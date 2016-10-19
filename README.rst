@@ -1,5 +1,5 @@
 vedit Overview
-==============
+================================================================================
 
 vedit is a Python library that simplifies editing and combining video files using ``ffmpeg``.
 
@@ -21,7 +21,7 @@ There are numerous stumbling blocks to these tasks - vedit makes the above thing
 - Different audio streams and channels
 
 Installation
-============
+================================================================================
 
 Assuming you have ``pip`` installed:
 
@@ -33,7 +33,7 @@ standard library, you can just download this repository and put the
 ``vedit`` directory in your Python path.
 
 Before You Begin
-================
+================================================================================
 
 vedit depends on the ``ffmpeg`` and ``ffprobe`` programs from the FFmpeg_ project, and on the libx264 video codec and the libfdk_aac audio codec, for example by configuring ``ffmpeg`` for compilation with:
 
@@ -44,7 +44,7 @@ vedit depends on the ``ffmpeg`` and ``ffprobe`` programs from the FFmpeg_ projec
 .. _FFmpeg: https://ffmpeg.org/
 
 Table of Contents
-=================
+================================================================================
 
 - `Examples`_
 
@@ -71,7 +71,7 @@ Table of Contents
 - `Odds and Ends`_
 
 Examples
-========
+================================================================================
 
 To get an idea of the sorts of things you can do with a few lines of code, consider these examples, which can be generated from the ``examples.py`` script in the root directory of the ``vedit`` Python module.
 
@@ -90,7 +90,7 @@ All the examples below begin with the following boilerplate, and assume the ``./
 Back to `Table of Contents`_
 
 Example 1: Clip 2 seconds out of the middle of a video
----------
+--------------------------------------------------------------------------------
 
 Link to input for example: https://youtu.be/9ul6rWAewd4
 
@@ -112,15 +112,15 @@ Link to example output: https://youtu.be/FEr6WMUx_4A
 Back to `Table of Contents`_
 
 Example 2: Resize a video with PAD, CROP, or PAN
-----------
+--------------------------------------------------------------------------------
 
 Link to source input: https://youtu.be/Qmbgrr6WJEY
 
 Links to example outputs:
 
- - Padded clip: https://youtu.be/2bTdwEzraxA
- - Panned clip: https://youtu.be/lCpbnudnFyc
- - Cropped clip: https://youtu.be/96v-KVq9B-g
+- Padded clip: https://youtu.be/2bTdwEzraxA
+- Panned clip: https://youtu.be/lCpbnudnFyc
+- Cropped clip: https://youtu.be/96v-KVq9B-g
 
 ::
 
@@ -161,7 +161,7 @@ Links to example outputs:
 Back to `Table of Contents`_
 
 Example 3: Put two videos next to each other
-----------
+--------------------------------------------------------------------------------
 
 Example output: https://youtu.be/fsYw2jLyuQ4
 
@@ -201,12 +201,12 @@ Example output: https://youtu.be/fsYw2jLyuQ4
 Back to `Table of Contents`_
 
 Example 4: Replace the audio track of a video
----------
+--------------------------------------------------------------------------------
 
 Example outputs:
  
- - Not attributed: https://youtu.be/4Z2Uigssc88
- - Attributed song: https://youtu.be/ojgAs5A5bSg
+- Not attributed: https://youtu.be/4Z2Uigssc88
+- Attributed song: https://youtu.be/ojgAs5A5bSg
 
 ::
 
@@ -245,12 +245,12 @@ Example outputs:
 Back to `Table of Contents`_
 
 Example 5: Overlay videos on top of other videos
----------
+--------------------------------------------------------------------------------
 
 Example outputs:
 
- - All audio tracks (bleagh): https://youtu.be/lqLLlXPYg3c
- - Just one audio track: https://youtu.be/hL0t3RXHKAM
+- All audio tracks (bleagh): https://youtu.be/lqLLlXPYg3c
+- Just one audio track: https://youtu.be/hL0t3RXHKAM
 
 ::
 
@@ -316,7 +316,7 @@ Example outputs:
 Back to `Table of Contents`_
 
 Example 6: Cascade overlayed videos and images on top of a base video or image
----------
+--------------------------------------------------------------------------------
 
 Example output: https://youtu.be/K2SuPqWrG3M
 
@@ -400,7 +400,7 @@ output below.
 Back to `Table of Contents`_
 
 Example 7: Add an overlay image, such as a watermark
----------
+--------------------------------------------------------------------------------
 
 Example output: https://youtu.be/1PrADMtqdRU
 
@@ -473,49 +473,49 @@ Example output: https://youtu.be/1PrADMtqdRU
 Back to `Table of Contents`_
 
 Module Concepts
-===============
+================================================================================
 
 Module Concepts
 
 Back to `Table of Contents`_
 
 Display Configuration
--------
+--------------------------------------------------------------------------------
 
 Display Configuration
 
 Back to `Table of Contents`_
 
 Windows
--------
+--------------------------------------------------------------------------------
 
 Windows
 
 Back to `Table of Contents`_
 
 Videos and Clips
-----------------
+--------------------------------------------------------------------------------
 
 Videos and Clips
 
 Back to `Table of Contents`_
 
 Watermarks
-----------
+--------------------------------------------------------------------------------
 
 Watermarks
 
 Back to `Table of Contents`_
 
 Audio
------
+--------------------------------------------------------------------------------
 
 Audio
 
 Back to `Table of Contents`_
 
 Logging Output
-==============
+================================================================================
 
 vedit produces lots of output through Python's logging framework.  Messages are at these levels:
 
@@ -531,21 +531,21 @@ warn
 Back to `Table of Contents`_
 
 Getting Help
-============
+================================================================================
 
 File an issue on Github for this project https://github.com/digitalmacgyver/vedit/issues
 
 Back to `Table of Contents`_
 
 Contributing
-============
+================================================================================
 
 Feel free to fork and issue a pull request at: https://github.com/digitalmacgyver/vedit
 
 Back to `Table of Contents`_
 
 Caching Behavior
-================
+================================================================================
 
 When a Video object is created, ``ffprobe`` is called to gather some
 metadata about the video.  This is done once per unique OS filename
@@ -578,7 +578,7 @@ class: ``Window.clear_cache()``
 Back to `Table of Contents`_
 
 Odds and Ends
-=============
+================================================================================
 
 - The first video stream encountered in a file is the one used, the rest are ignored.
 - The first audio stream encountered in a file is the one used, the rest are ignored.
