@@ -43,7 +43,7 @@ vedit depends on the ``ffmpeg`` program from the FFmpeg_ project, and on the lib
 
 .. _FFmpeg: https://ffmpeg.org/
 
-This however `example`_ works.
+This however example_ works.
 
 Table of Contents
 =================
