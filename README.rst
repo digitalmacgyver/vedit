@@ -76,7 +76,10 @@ All the examples below begin with the following boilerplate, and assume the ``./
   log.setLevel( logging.DEBUG )
    
 
+as
+
 .. _`Example 1`:
+
 Example 1: Clip 2 seconds out of the middle of a video
 ---------
 ::
