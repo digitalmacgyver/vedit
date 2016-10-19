@@ -1808,12 +1808,12 @@ if __name__ == '__main__':
     w4 = Window( display=Display( display_style=PAD, overlay_direction=RIGHT, pad_bgcolor='Green' ), bgcolor='Green', width=560, height=512, x=720, y=512 )
 
     # We can apply some static image watermarks.
-    m1 = Watermark( '/wintmp/summary-test/logo.png',
+    m1 = Watermark( 'logo.png',
                     x = "main_w-overlay_w-10",
                     y = "main_h-overlay_h-10",
                     fade_out_start = 3,
                     fade_out_duration = 1 )
-    m2 = Watermark( '/wintmp/summary-test/logo128.png',
+    m2 = Watermark( 'logo128.png',
                     x = "trunc((main_w-overlay_w)/2)",
                     y = "trunc((main_h-overlay_h)/2)",
                     fade_in_start = -1,
