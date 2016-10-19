@@ -29,19 +29,23 @@ vedit depends on the ``ffmpeg`` program from the FFmpeg_ project, and on the lib
 
 .. _FFmpeg: https://ffmpeg.org/
 
-For each window, the base most layer will be the bgimage_file (if specified) 
+Table of Contents
+=================
 
-./configure --enable-gpl --enable-libx264 --enable-nonfree --enable-libfdk-aac
+- `Caching Behavior`_
 
 
-Caching behaviors:
+Caching Behavior
+================
 
-* When a Video object is created, ffprobe is called to gather some metadata about the video.  This is done once per unique OS filename per program invocation.  It is not supported to construct different Video objects from the same OS filename but different contents.
+When a Video object is created, ``ffprobe`` is called to gather some
+metadata about the video.  This is done once per unique OS filename
+per program invocation.  It is not supported to construct different
+Video objects from the same OS filename but different contents.
 
-    NOTE: Window objects cache data both within and across program
-    invocations.  Broadly this saves a ton of compute time by not
-    re-transcoding Clips whose results can't change, but can result in
-    the wrong stuff if there are collisions in the cache.
+Window objects cache data both within and across program invocations. Broadly this saves a ton of compute time by not re-transcoding
+    Clips whose results can't change, but can result in the wrong
+    stuff if there are collisions in the cache.
     
     If two Clips have the same elements here, they are assumed to be
     the same in the Cache:
