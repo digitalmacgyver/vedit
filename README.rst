@@ -33,7 +33,9 @@ Table of Contents
 =================
 
 - `Examples`_
+
   - `Example 1`_
+
 - `Getting Help`_
 - `Contributing`_
 - `Caching Behavior`_
