@@ -19,5 +19,9 @@ def example01():
     window.clips = [ clip ]
     window.render()
 
+    # Output at ./examples/example01.mp4
+
+    return
+
 if __name__ == "__main__":
     example01()

@@ -212,7 +212,7 @@ class Display( object ):
                   overlay_direction   = DOWN,
                   overlay_min_gap     = 4,
                   pan_direction       = ALTERNATE,
-                  include_audio       = False ):
+                  include_audio       = True ):
 
         if display_style in DISPLAY_STYLES:
             self.display_style = display_style
@@ -1060,7 +1060,7 @@ class Window( object ):
 
 
     ### Window method ########################################
-    def get_clip_hash( self, clip, width, height, pan_direction="", pix_fmt="yuv420p", include_audio=False ):
+    def get_clip_hash( self, clip, width, height, pan_direction="", pix_fmt="yuv420p", include_audio=True ):
         '''It can be very time consuming to produce a clip from a video, we
         endeavor here to not do the same work over and over if it's
         not needed.
