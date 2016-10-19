@@ -1,3 +1,5 @@
+
+
 Fun utility for combining various video clips with FFMPEG.
 
 For each window, the base most layer will be the bgimage_file (if specified) 
@@ -52,6 +54,6 @@ Video oddities:
   ffmpeg -crf option with an argument of 16, which should be visially
   lossless.
 
-* The first video stream encountered in a file is the one used.
+* The first video stream encountered in a file is the one used, the rest are ignored.
 
-* The first audio stream encountered in a file is the one used.
+* The first audio stream encountered in a file is the one used, the rest are ignored.

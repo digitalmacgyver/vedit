@@ -54,14 +54,9 @@ log = logging.getLogger(__name__)
 #
 # If the path where this script is run does not have these binaries,
 # the full path to them can be updated here.
-#
-#
-#FFMPEG = 'ffmpeg'
-#FFPROBE = 'ffprobe'
 
-FFMPEG = '/home/viblio/tmp/ffmpeg_new/ffmpeg/ffmpeg'
-FFPROBE = '/home/viblio/tmp/ffmpeg_new/ffmpeg/ffprobe'
-
+FFMPEG = 'ffmpeg'
+FFPROBE = 'ffprobe'
 
 # "Constant" Clip display styles.
 #
@@ -1729,7 +1724,7 @@ def distribute_clips( clips, windows, min_duration=None, randomize_clips=False )
     return
 
 ################################################################################
-def get_solid_clip( duration,
+def gen_background_video( duration,
                     width   = 1280,
                     height  = 720,
                     bgcolor = 'Black',
