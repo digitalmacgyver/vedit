@@ -16,13 +16,12 @@ Videos starting with the letter "i"
 
 Images:
 
-- cat01, cat02, cat04, cat05, cat07, dog02, dog03, dog07, transparent01 are public domain
+- cat02, cat04, cat05, cat07, dog02, dog03, dog07, transparent01 are public domain
 - cat03 is from https://en.wikipedia.org/wiki/Cat#/media/File:Black_cat_being_snowed_on.jpg
 - cat06 is from https://www.flickr.com/photos/kretyen/2740694473
 - dog01 is from https://commons.wikimedia.org/wiki/File:Too-cute-doggone-it-video-playlist.jpg
 - dog04 is from https://en.wikipedia.org/wiki/Bernese_Mountain_Dog#/media/File:Bouvier_Bernois_BE.jpg
 - dog05 is from https://www.flickr.com/photos/caninest/4394708139
-- dog06 is licensed under the CC0 from https://www.pexels.com/
 - dog08 is from https://www.flickr.com/photos/14141796@N05/5521501965
 
 Audio:

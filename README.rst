@@ -224,7 +224,64 @@ Example 5: Overlay videos on top of other videos
 ---------
 ::
 
-    code
+    # Let's overlay two smaller windows on top of a base video.
+    base_video = vedit.Video( "./examples/i030.mp4" )
+    base_clip = vedit.Clip( video=base_video )
+    output_file = "./example_output/example05.mp4"
+    # Use the default width, height, and display parameters:
+    # 1280x1024, which happens to be the size of this input.
+    base_window = vedit.Window( clips = [ base_clip ],
+                                output_file=output_file )
+
+    # We'll create two smaller windows, each 1/3 the size of the
+    # base_window, and position them towards the top left, and bottom
+    # right of the base window.
+    overlay_window1 = vedit.Window( width=base_window.width/3, height=base_window.height/3,
+                                    x=base_window.width/12, y=base_window.height/12 )
+    overlay_window2 = vedit.Window( width=base_window.width/3, height=base_window.height/3,
+                                    x=7*base_window.width/12, y=7*base_window.height/12 )
+    
+    # Now let's put some clips in each of the overlay windows.
+    window_1_clips = [
+        vedit.Clip( video=vedit.Video( "./examples/d007.mp4" ) ),
+        vedit.Clip( video=vedit.Video( "./examples/d006.mp4" ) ),
+    ]
+    window_2_clips = [
+        vedit.Clip( video=vedit.Video( "./examples/p006.mp4" ) ),
+        vedit.Clip( video=vedit.Video( "./examples/p007.mp4" ) ),
+        vedit.Clip( video=vedit.Video( "./examples/p008.mp4" ) ),
+    ]
+
+    # Now let's embed the clips in the windows, and the overlay
+    # windows in our base_window and render.
+    overlay_window1.clips = window_1_clips
+    overlay_window2.clips = window_2_clips
+    base_window.windows = [ overlay_window1, overlay_window2 ]
+    base_window.render()
+    log.info( "Made multi-video composition at: %s" % ( output_file ) )
+
+    # Well - the last video looks OK, but it sounds terrible - the
+    # audio from all the videos are being mixed together.
+    #
+    # Let's try again but exclude audio from everything but the base
+    # video.
+    output_file = "./example_output/example05-single-audio.mp4"
+    no_audio_display_config = vedit.Display( include_audio=False )
+    no_audio_overlay_window1 = vedit.Window( width=base_window.width/3, height=base_window.height/3,
+                                    x=base_window.width/12, y=base_window.height/12,
+                                    display=no_audio_display_config )
+    no_audio_overlay_window2 = vedit.Window( width=base_window.width/3, height=base_window.height/3,
+                                    x=7*base_window.width/12, y=7*base_window.height/12,
+                                    display=no_audio_display_config )
+    
+    # Now let's embed the clips in the windows, and the overlay
+    # windows in our base_window and render.
+    no_audio_overlay_window1.clips = window_1_clips
+    no_audio_overlay_window2.clips = window_2_clips
+    base_window.output_file = output_file
+    base_window.windows = [ no_audio_overlay_window1, no_audio_overlay_window2 ]
+    base_window.render()
+    log.info( "Made multi-video composition with single audio track at: %s" % ( output_file ) )
 
 Back to `Table of Contents`_
 
@@ -232,7 +289,80 @@ Example 6: Cascade overlayed videos and images on top of a base video or image
 ---------
 ::
 
-    code
+    import glob
+    import random
+
+    # The OVERLAY display_style when applied to a clip in the window
+    # makes it shrink a random amount and be played while it scrolls
+    # across the base window.
+    #
+    # Let's use that to combine several things together and make a
+    # huge mess!
+    output_file = "./example_output/example06.mp4"
+    base_video = vedit.Video( "./examples/i030.mp4" )
+
+    # Let's use a different audio track for this.
+    base_clip = vedit.Clip( video=base_video, display=vedit.Display( include_audio=False ) )
+    base_window = vedit.Window( clips = [ base_clip ],
+                                output_file=output_file,
+                                duration=30,
+                                audio_file="./examples/a2.mp4" )
+
+    # Turn our cat images into clips of random length between 3 and 6
+    # seconds and have them cascade across the screen from left to
+    # right.
+    cat_display = vedit.Display( display_style=vedit.OVERLAY,
+                                 overlay_direction=vedit.RIGHT,
+                                 include_audio=False,
+                                 overlay_concurrency=4,
+                                 overlay_min_gap=0.8 )
+    cat_clips = []
+    for cat_pic in glob.glob( "./examples/cat*jpg" ):
+        cat_video_file = vedit.gen_background_video( bgimage_file=cat_pic,
+                                                     duration=random.randint( 3, 6 ) )
+        cat_video = vedit.Video( cat_video_file )
+        cat_clips.append( vedit.Clip( video=cat_video, display=cat_display ) )
+
+    # Turn our dog images into clips of random length between 2 and 5
+    # seconds and have them cascade across the screen from top to
+    # bottom.
+    dog_display = vedit.Display( display_style=vedit.OVERLAY,
+                                 overlay_direction=vedit.DOWN,
+                                 include_audio=False,
+                                 overlay_concurrency=4,
+                                 overlay_min_gap=0.8 )
+    dog_clips = []
+    for dog_pic in glob.glob( "./examples/dog*jpg" ):
+        dog_video_file = vedit.gen_background_video( bgimage_file=dog_pic,
+                                                     duration=random.randint( 3, 6 ) )
+                                                     
+        dog_video = vedit.Video( dog_video_file )
+        dog_clips.append( vedit.Clip( video=dog_video, display=dog_display ) )
+    
+    # Throw in the clips from the p series of videos of their full
+    # duration cascading from bottom to top.
+    pvideo_display = vedit.Display( display_style=vedit.OVERLAY,
+                                    overlay_direction=vedit.UP,
+                                    include_audio=False,
+                                    overlay_concurrency=4,
+                                    overlay_min_gap=0.8 )
+    pvideo_clips = []
+    for p_file in glob.glob( "./examples/p0*mp4" ):
+        pvideo_video = vedit.Video( p_file )
+        pvideo_clips.append( vedit.Clip( video=pvideo_video, display=pvideo_display ) )
+    
+    # Shuffle all the clips together and add them onto the existing
+    # clips for the base_window.
+    overlay_clips = cat_clips + dog_clips + pvideo_clips
+    random.shuffle( overlay_clips )
+    base_window.clips += overlay_clips
+    base_window.render()
+    log.info( "Goofy mashup of cats, dogs, and drone videos over Icelandic countryside at: %s" % ( output_file ) )
+
+
+Note: Since the composition of this video involves several random
+elements, the output you get will not be the same as the example
+output below.
 
 Back to `Table of Contents`_
 

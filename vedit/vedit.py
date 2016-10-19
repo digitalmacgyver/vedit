@@ -338,7 +338,8 @@ class Video( object ):
                                        'height'   : self.height,
                                        'duration' : self.duration,
                                        'sample_aspect_ratio' : self.sample_aspect_ratio,
-                                       'pix_fmt'  : self.pix_fmt }
+                                       'pix_fmt'  : self.pix_fmt,
+                                       'channels' : self.channels }
 
     def get_width( self ):
         return self.width
@@ -915,7 +916,7 @@ class Window( object ):
             window_file = window.render( helper=True, audio_channels=audio_channels )
             tmpfile = self.get_next_renderfile()
             
-            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 -ac %d -c:a libfdk_aac -filter_complex " [0:v] fifo [v0] ; [1:v] fifo [v1] ; [v0] [v1] overlay=x=%s:y=%s:eof_action=pass%s [outv] ; [0:a] afifo [a0] ; [1:a] afifo [a1] ; [a0] [a1] amix=inputs=2:duration=longest:dropout_transition=0 [outa] " -map "[outv]" -map "[outa]" -t %f %s' % ( FFMPEG, current, window_file, window.pix_fmt, audio_channels, window.x, window.y, sar_clause, self.duration, tmpfile )
+            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 -ac %d -c:a libfdk_aac -filter_complex " [0:v] fifo [v0] ; [1:v] fifo [v1] ; [v0] [v1] overlay=x=%s:y=%s:eof_action=pass%s [outv] ; [0:a] afifo [a0] ; [1:a] afifo [a1] ; [a0] [a1] amix=inputs=2:duration=longest:dropout_transition=5 [outa] " -map "[outv]" -map "[outa]" -t %f %s' % ( FFMPEG, current, window_file, window.pix_fmt, audio_channels, window.x, window.y, sar_clause, self.duration, tmpfile )
 
 
             log.info( "Running: %s" % ( cmd ) )
@@ -950,7 +951,7 @@ class Window( object ):
             else:
                 audio_fade_start = max( 0, self.duration - 5 )
                 audio_fade_duration = self.duration - audio_fade_start
-            afade_clause = ' -c:a libfdk_aac -filter_complex " [1:a] afade=t=out:st=%f:d=%f [a1] ; [0:a] [a1] amix=inputs=2:duration=longest:dropout_transition=0 " ' % ( audio_fade_start, audio_fade_duration )
+            afade_clause = ' -c:a libfdk_aac -filter_complex " [1:a] afade=t=out:st=%f:d=%f [a1] ; [0:a] [a1] amix=inputs=2:duration=longest:dropout_transition=5 " ' % ( audio_fade_start, audio_fade_duration )
 
             current = tmpfile
             tmpfile = self.get_next_renderfile()
@@ -974,7 +975,7 @@ class Window( object ):
         ###### Fix overall volume issues.
         current = tmpfile
         tmpfile = self.get_next_renderfile()
-        cmd = '%s -y -i %s -pix_fmt %s -c:a libfdk_aac -ac %d -vf copy -af " [0:a] dynaudnorm " %s' % ( FFMPEG, current, self.pix_fmt, audio_channels, tmpfile )
+        cmd = '%s -y -i %s -pix_fmt %s -c:a libfdk_aac -ac %d -vf copy -af " [0:a] dynaudnorm=g=3 " %s' % ( FFMPEG, current, self.pix_fmt, audio_channels, tmpfile )
         log.info( "Running: %s" % ( cmd ) )
         ( status, output ) = commands.getstatusoutput( cmd )
         log.debug( "Output was: %s" % ( output ) )
@@ -1161,7 +1162,7 @@ class Window( object ):
             if overlay_video.channels is None:
                 audio_clause = " [0:a] afifo "
             else:
-                audio_clause = " [0:a] afifo [a0] ; [1:a] afifo [a1] ; [a0] [a1] amix=inputs=2:duration=longest:dropout_transition=0 "
+                audio_clause = " [0:a] afifo [a0] ; [1:a] afifo [a1] ; [a0] [a1] amix=inputs=2:duration=longest:dropout_transition=5 "
 
             # Put the result on top of the background_file.
             tmpfile = self.get_next_renderfile()
@@ -1254,7 +1255,7 @@ class Window( object ):
                 audio_mix += " [a%d] " % ( aindex )
                 aindex += 1
             if aindex > 1:
-                audio_clause = audio_offsets + audio_mix + " amix=inputs=%d:duration=longest:dropout_transition=0 [outa] " % ( aindex )
+                audio_clause = audio_offsets + audio_mix + " amix=inputs=%d:duration=longest:dropout_transition=5 [outa] " % ( aindex, aindex )
             else:
                 audio_clause = audio_offsets + audio_mix + " afifo [outa] "
 
@@ -1739,26 +1740,39 @@ def gen_background_video( duration,
 
     Inputs:
     * duration - Time in seconds of the video
-    * width / height - Width / height in pixels of the video.
+    * width / height - Width / height in pixels of the video - these
+      are overridden if bgimage_file is provided.
     * bgcolor - The background color of the video
     * bgimage_file - Optional, if specified the video should consist
-      of this image rather than a solid color.
-
-    * output_file - If specified, the resulting file will be placed at
-      output_file.  Default is to place it in the vsum module's
-      temporary files location, which is by default
+      of this image rather than a solid color, if specified the
+      dimensions of the image determine the width and height.
+    * output_file - If specified, the resulting file will be copied to
+      this location.
 
     Outputs: Returns a string denoting the filesystem path where the
-    resulting video can be found.
+    resulting video can be found (which will differ from output_file).
 
     '''
     
-    w = Window( duration = duration,
-                width    = width,
-                height   = height,
-                bgcolor  = bgcolor,
-                bgimage_file = bgimage_file )
-    
+    if bgimage_file is not None:
+        bgimage_info = Video( bgimage_file )
+        width = bgimage_info.width
+        height = bgimage_info.height
+
+    if output_file is None:
+        w = Window( duration     = duration,
+                    width        = width,
+                    height       = height,
+                    bgcolor      = bgcolor,
+                    bgimage_file = bgimage_file )
+    else:
+        w = Window( duration     = duration,
+                    width        = width,
+                    height       = height,
+                    bgcolor      = bgcolor,
+                    bgimage_file = bgimage_file,
+                    output_file  = output_File )
+
     return w.render()
 
 if __name__ == '__main__':
