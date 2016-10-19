@@ -340,6 +340,12 @@ class Video( object ):
                                        'sample_aspect_ratio' : self.sample_aspect_ratio,
                                        'pix_fmt'  : self.pix_fmt }
 
+    def get_width( self ):
+        return self.width
+            
+    def get_height( self ):
+        return self.height
+
 ################################################################################        
 class Clip( object ):
     '''Clip objects represent a segment of a video which will be composed
