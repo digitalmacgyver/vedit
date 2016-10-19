@@ -91,6 +91,11 @@ Back to `Table of Contents`_
 
 Example 1: Clip 2 seconds out of the middle of a video
 ---------
+
+Link to example input: `examples/testpattern.mp4`_
+
+Link to example output: https://youtu.be/FEr6WMUx_4A
+
 ::
 
     # Clipping 2 seconds out of source video from 1.5 seconds to 3.5 seconds.
@@ -108,6 +113,13 @@ Back to `Table of Contents`_
 
 Example 2: Resize a video with PAD, CROP, or PAN
 ----------
+
+Links to example outputs:
+
+ - Padded clip: https://youtu.be/2bTdwEzraxA
+ - Panned clip: https://youtu.be/lCpbnudnFyc
+ - Cropped clip: https://youtu.be/96v-KVq9B-g
+
 ::
 
     # Turning a 1280x720 16:9 input video into a 640x480 4:3 video.
@@ -148,6 +160,9 @@ Back to `Table of Contents`_
 
 Example 3: Put two videos next to each other
 ----------
+
+Example output: https://youtu.be/fsYw2jLyuQ4
+
 ::
 
     # Lets set up some source videos, and some clips for use below.
@@ -180,10 +195,17 @@ Example 3: Put two videos next to each other
     base_window.render()
     log.info( "Side by side output is at: %s" % ( output_file ) )
 
+
 Back to `Table of Contents`_
 
 Example 4: Replace the audio track of a video
 ---------
+
+Example outputs:
+ 
+ - Not attributed: https://youtu.be/4Z2Uigssc88
+ - Attributed song: https://youtu.be/ojgAs5A5bSg
+
 ::
 
     source = vedit.Video( "./examples/i010.mp4" )
@@ -222,6 +244,12 @@ Back to `Table of Contents`_
 
 Example 5: Overlay videos on top of other videos
 ---------
+
+Example outputs:
+
+ - All audio tracks (bleagh): https://youtu.be/lqLLlXPYg3c
+ - Just one audio track: https://youtu.be/hL0t3RXHKAM
+
 ::
 
     # Let's overlay two smaller windows on top of a base video.
@@ -287,6 +315,9 @@ Back to `Table of Contents`_
 
 Example 6: Cascade overlayed videos and images on top of a base video or image
 ---------
+
+Example output: https://youtu.be/K2SuPqWrG3M
+
 ::
 
     import glob
@@ -368,6 +399,9 @@ Back to `Table of Contents`_
 
 Example 7: Add an overlay image, such as a watermark
 ---------
+
+Example output: https://youtu.be/1PrADMtqdRU
+
 ::
 
     code
