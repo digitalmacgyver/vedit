@@ -5,7 +5,8 @@ def readme():
         return f.read()
 
 setup( name='vedit',
-       description='0.1',
+       version='0.1',
+       description='Library for editing video by wrapping ffmpeg.',
        long_description=readme(),
        url='https://github.com/digitalmacgyver/vedit',
        author='Matthew Hayward',
