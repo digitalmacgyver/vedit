@@ -991,7 +991,7 @@ class Window( object ):
 
     ### Window method ########################################
     def add_watermarks( self, watermarks, current ):
-        cmd = '%s -y -i %s -acodec copy ' % ( FFMPEG, current )
+        cmd = '%s -y -i %s ' % ( FFMPEG, current )
 
         tmpfile = self.get_next_renderfile()
 
@@ -1001,6 +1001,8 @@ class Window( object ):
             if watermark.filename is not None:
                 file_idx += 1
                 cmd += " -loop 1 -i %s " % ( watermark.filename )
+
+        cmd += ' -acodec copy '
 
         cmd += ' -pix_fmt %s -filter_complex " ' % ( self.pix_fmt )
 
@@ -1047,7 +1049,7 @@ class Window( object ):
             prior_overlay = "o%s" % idx
 
         # Stip off training [o##] ;
-        cmd = cmd[:-(6+len( idx-1 ) )]
+        cmd = cmd[:-(6+len( str( idx-1 ) ) )]
         cmd += ' " %s' % ( tmpfile )
         log.info( "Running: %s" % ( cmd ) )
         ( status, output ) = commands.getstatusoutput( cmd )
