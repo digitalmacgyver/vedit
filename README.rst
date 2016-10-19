@@ -212,11 +212,15 @@ Example 5: Overlay videos on top of other videos
 ---------
 ::
 
+    code
+
 
 .. _`Example 6`:
 Example 6: Cascade overlayed videos and images on top of a base video or image
 ---------
 ::
+
+    code
 
 
 .. _`Example 7`:
@@ -224,8 +228,39 @@ Example 7: Add an overlay image, such as a watermark
 ---------
 ::
 
+    code
 
 
+Module Concepts
+===============
+
+Module Concepts
+
+
+Display Configuation
+-------
+
+Display Configuration
+
+Windows
+-------
+
+Windows
+
+Videos and Clips
+----------------
+
+Videos and Clips
+
+Watermarks
+----------
+
+Watermarks
+
+Audio
+-----
+
+Audio
 
 
 Logging Output
