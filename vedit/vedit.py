@@ -1613,7 +1613,7 @@ class Watermark( object ):
 
     By default the image is present for the whole video.
 
-    The apperance of the image can be set to:
+    The appearance of the image can be set to:
     
     * Begin at fade_in_start
     * End at fade_out_start

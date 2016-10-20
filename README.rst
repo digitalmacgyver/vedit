@@ -630,6 +630,8 @@ In the example above there are five windows:
 
 Each of these five ``Window`` objects would have it's own content of Clips, background images, and/or ``Watermark`` objects.
 
+`Example 5: Overlay videos on top of other videos`_ has an example of two Windows overlayed onto another at: https://youtu.be/hL0t3RXHKAM
+
 The duration of a ``Window``\'s rendered video output will be:
 
 - The ``duration`` attribute, if set during construction
@@ -788,7 +790,7 @@ attribute of a ``Window``.
 ========================= ======== =============== ====
 Argument                  Required Default         Description
 ========================= ======== =============== ====
-filename                  Yes      -               Path to an image file to use for the Watermark.  Mutually exclusive with bgcolor.
+filename                  Yes      None            Path to an image file to use for the Watermark.  Mutually exclusive with bgcolor.
 x                         No       "0"             Passed to the ffmpeg overlay filter's x argument to position this watermark.  Can be a simple numeric value which will be interpreted as a pixel offset from the left, or something more complex like: ``"main_w-overlay_w-10"`` to position near the right of the screen.
 y                         No       "0"             Passed to the ffmpeg overlay filter's y argument to position this watermark.  Can be a simple numeric value which will be interpreted as a pixel offset from the top, or something more complex like: ``"trunc((main_h-overlay_h)/2)"`` to position vertically center.
 fade_in_start             No       None            If specified the watermark will begin to appear at fade_in_start seconds.  Negative values are interpreted as offsets from the end of the video.
