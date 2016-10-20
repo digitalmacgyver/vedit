@@ -499,6 +499,12 @@ Display Configuration
 
 The ``Display`` object contains configuration that dictates how a given ``Clip`` appears when the ``Window`` it is in is rendered.
 
+Each ``Clip`` can its own ``Display``, and so can each ``Window``.  When considering what ``Display`` settings to use for a given ``Clip`` the following selections are made:
+
+1. If the ``Clip`` has a ``Display`` object, it is used.
+2. Otherwise, if the ``Window has a ``Display`` object, it is used.
+3. Otherwise, the ``Default`` display elements described below are used.
+
 Constructor arguments:
 
 =================== ======== =============== ====
@@ -535,17 +541,18 @@ CROP, PAD, and PAN
 
 If the ``display_style`` is:
 
-``CROP``: The ``Clip`` will be scaled to the smallest size such that both its height and width are at least as large as the ``Window`` it is in.  The ``Clip`` is then centered in the ``Window`` and any portions of the ``Clip`` that fall outside the ``Window`` are cropped away and discarded.
+**CROP**: The ``Clip`` will be scaled to the smallest size such that both its height and width are at least as large as the ``Window`` it is in.  The ``Clip`` is then centered in the ``Window`` and any portions of the ``Clip`` that fall outside the ``Window`` are cropped away and discarded.
 
 As in `Example 2: Resize a video with PAD, CROP, or PAN`_ when: https://youtu.be/Qmbgrr6WJEY is cropped the result is: https://youtu.be/96v-KVq9B-g 
 
-``PAD``: The ``Clip`` will be scaled to the largest size such that both its height and width are no larger than the ``Window`` it is in.  Then any space in the ``Window`` not covered by the clip is colored the ``pad_bgcolor`` color (defaults to black).
+**PAD**: The ``Clip`` will be scaled to the largest size such that both its height and width are no larger than the ``Window`` it is in.  Then any space in the ``Window`` not covered by the clip is colored the ``pad_bgcolor`` color (defaults to black).
 
 As in `Example 2: Resize a video with PAD, CROP, or PAN`_ when: https://youtu.be/Qmbgrr6WJEY is padded onto a blue background the result is: https://youtu.be/2bTdwEzraxA
 
-``PAN``: The ``Clip`` will be scaled to the smallest size such that both its height and width are at least as large as the ``Window`` it is in.  The ``Clip`` then is scrolled through the ``Window`` in the direction specified by ``pad_direction``.
+**PAN**: The ``Clip`` will be scaled to the smallest size such that both its height and width are at least as large as the ``Window`` it is in.  The ``Clip`` then is scrolled through the ``Window`` in the direction specified by ``pad_direction``.
 
-As in `Example 2: Resize a video with PAD, CROP, or PAN`_ when: https://youtu.be/Qmbgrr6WJEY is panned the result is: https://youtu.be/lCpbnudnFyc
+As in `Example 2: Resize a video with PAD, CROP, or PAN`_ when: https://youtu.be/Qmbgrr6WJEY is panned with ``pan_direction`` of ``vedit.RIGHT`` the result is: https://youtu.be/lCpbnudnFyc
+
 
 Back to `Table of Contents`_
 
