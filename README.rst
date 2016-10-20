@@ -488,7 +488,7 @@ There are four main classes in the ``vedit`` module:
   ``Display``\s configure the properties that a given ``Clip`` has when it is rendered into a given ``Window``.
 
 ``Window``
-  ``Window``\s are the building blocks that are used to compose ``Clip``\s together.  The ``width`` and ``height`` properties of a ``Window`` determie the size of a ``Clip`` when it is rendered in that ``Window``.  In basic usage one or more ``Clip``\s are associated with a ``Window`` which is then rendered.  In more advanced usage ``Window``\s can include any number other ``Window``\s and ``Clip``\s to create complex outputs where several different ``Clip``\s play at the same time.
+  ``Window``\s are the building blocks that are used to compose ``Clip``\s together.  The ``width`` and ``height`` properties of a ``Window`` determine the size of a ``Clip`` when it is rendered in that ``Window``.  In basic usage one or more ``Clip``\s are associated with a ``Window`` which is then rendered.  In more advanced usage ``Window``\s can include any number other ``Window``\s and ``Clip``\s to create complex outputs where several different ``Clip``\s play at the same time.
 
 Back to `Table of Contents`_
 
@@ -497,7 +497,7 @@ Back to `Table of Contents`_
 Display Configuration
 --------------------------------------------------------------------------------
 
-The ``Display`` object contains configuration that dictates how a givel ``Clip`` appears when the ``Window`` it is in is rendered.
+The ``Display`` object contains configuration that dictates how a given ``Clip`` appears when the ``Window`` it is in is rendered.
 
 Constructor arguments:
 
@@ -518,7 +518,7 @@ Public methods: None
 The ``OVERLAY`` ``display_style``
 ---------------------------------
 
-This ``display_style`` makes the ``Clip`` be rendered as a small (randomly sized between 1/2 and 1/3 of the width of it's ``Window``) tile that cascades across the ``Window`` while it plays.  
+This ``display_style`` makes the ``Clip`` be rendered as a small (randomly sized between 1/2 and 1/3 of the width of its ``Window``) tile that cascades across the ``Window`` while it plays.  
 
 The idea here is to make a collage of images or clips.  For a silly example see https://youtu.be/K2SuPqWrG3M - the output for `Example 6: Cascade overlayed videos and images on top of a base video or image`_.
 
@@ -528,7 +528,24 @@ When a several ``Clip``\s are rendered in a given ``Window`` with the ``OVERLAY`
 - ``overlay_direction`` - One of ``vedit.UP``, ``DOWN``, ``LEFT``, or ``RIGHT``.  The ``Clip`` will move across the ``Window`` in this direction as it plays.
 - ``overlay_min_gap`` - The shortest time in seconds between when two ``Clip``\s will move across the ``Window``.
 
-``display_style``: When the a ``Clip`` is rendered in a ``Window``, 
+CROP, PAD, and PAN
+------------------
+
+``display_style``: When the a ``Clip`` is rendered in a ``Window``, if the ``Clip`` and the ``Window`` do not have the same aspect ratio, something must be done to make the ``Clip`` fit in the ``Window``.
+
+If the ``display_style`` is:
+
+``CROP``: The ``Clip`` will be scaled to the smallest size such that both its height and width are at least as large as the ``Window`` it is in.  The ``Clip`` is then centered in the ``Window`` and any portions of the ``Clip`` that fall outside the ``Window`` are cropped away and discarded.
+
+As in `Example 2: Resize a video with PAD, CROP, or PAN`_ when: https://youtu.be/Qmbgrr6WJEY is cropped the result is: https://youtu.be/96v-KVq9B-g 
+
+``PAD``: The ``Clip`` will be scaled to the largest size such that both its height and width are no larger than the ``Window`` it is in.  Then any space in the ``Window`` not covered by the clip is colored the ``pad_bgcolor`` color (defaults to black).
+
+As in `Example 2: Resize a video with PAD, CROP, or PAN`_ when: https://youtu.be/Qmbgrr6WJEY is padded onto a blue background the result is: https://youtu.be/2bTdwEzraxA
+
+``PAN``: The ``Clip`` will be scaled to the smallest size such that both its height and width are at least as large as the ``Window`` it is in.  The ``Clip`` then is scrolled through the ``Window`` in the direction specified by ``pad_direction``.
+
+As in `Example 2: Resize a video with PAD, CROP, or PAN`_ when: https://youtu.be/Qmbgrr6WJEY is panned the result is: https://youtu.be/lCpbnudnFyc
 
 Back to `Table of Contents`_
 
