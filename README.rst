@@ -69,7 +69,6 @@ Table of Contents
 - `Logging Output`_
 - `Getting Help`_
 - `Contributing`_
-- `Caching Behavior`_
 - `Odds and Ends`_
 
 Examples
@@ -543,39 +542,6 @@ Contributing
 ================================================================================
 
 Feel free to fork and issue a pull request at: https://github.com/digitalmacgyver/vedit
-
-Back to `Table of Contents`_
-
-Caching Behavior
-================================================================================
-
-When a Video object is created, ``ffprobe`` is called to gather some
-metadata about the video.  This is done once per unique OS filename
-per program invocation.  It is not supported to construct different
-Video objects from the same OS filename but different contents.
-
-Window objects cache data both within and across program
-invocations. This saves time by not re-transcoding Clips whose results
-can't change, but can result in the wrong output if there are
-collisions in the cache.
-    
-If two Clips have the same elements here, they are assumed to be the
-same in the Cache:
-
-- Absolute path to the filename from the underlying Video object
-- Clip start time
-- Clip end time
-- The ``display_style`` of the Display for this Clip as being rendered in this Window.
-- Clip width
-- Clip height
-- Window pan_direction (only relevant if display_style is PAN and pan_direction is ALTERNATE)
-- The pixel format of this Window
-- The include_audio attribute of the Display for this Clip as it is rendered in this Window
-
-If the Cache is incorrect (most likely because the underlying contents
-of an input filename on the filesystem have changed), the cache should
-be cleared by calling the static clear_cache method of the Window
-class: ``Window.clear_cache()``
 
 Back to `Table of Contents`_
 

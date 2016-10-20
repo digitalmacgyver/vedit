@@ -5,7 +5,7 @@ def readme():
         return f.read()
 
 setup( name='vedit',
-       version='0.0.1a1',
+       version='0.0.1b1',
        description='Library for editing video by wrapping ffmpeg.',
        long_description=readme(),
        url='https://github.com/digitalmacgyver/vedit',
@@ -13,10 +13,13 @@ setup( name='vedit',
        author_email='mjhayward@gmail.com',
        license='MIT',
        packages=['vedit'],
+       install_requires=['future'],
        classifiers=[
            'Development Status :: 4 - Beta',
            'Programming Language :: Python',
-           'Programming Language :: Python :: 2 :: Only',
+           'Programming Language :: Python :: 2',
+           'Programming Language :: Python :: 2.7',
+           'Programming Language :: Python :: 3',
            'Environment :: Console',
            'Intended Audience :: Developers',
            'License :: OSI Approved :: MIT License',

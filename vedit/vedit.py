@@ -17,17 +17,18 @@ this configure command:
 '''
 
 import collections
-import commands
 import getpass
 import glob
 import hashlib
 import json
 import logging
 import os
-import pickle
 import random
 import re
 import shutil
+from future import standard_library
+standard_library.install_aliases()
+import subprocess
 import tempfile
 import uuid
 
@@ -316,7 +317,7 @@ class Video( object ):
             self.channels = Video.videos[filename]['channels']
         else:
             # Collect file metadata with FFPROBE.
-            ( status, output ) = commands.getstatusoutput( "%s -v quiet -print_format json -show_streams %s" % ( FFPROBE, filename ) )
+            ( status, output ) = subprocess.getstatusoutput( "%s -v quiet -print_format json -show_streams %s" % ( FFPROBE, filename ) )
             info = json.loads( output )
             for stream in info['streams']:
                 if stream['codec_type'] == 'video':
@@ -598,7 +599,7 @@ class Window( object ):
         '''
         if os.path.exists( "%s/%s" % ( Window.tmpdir, Window.cache_dict_file ) ):
             f = open( "%s/%s" % ( Window.tmpdir, Window.cache_dict_file ), 'r' )
-            Window.cache_dict = pickle.load( f )
+            Window.cache_dict = json.load( f )
             f.close()
         else:
             if not os.path.isdir( Window.tmpdir ):
@@ -614,8 +615,8 @@ class Window( object ):
         if not os.path.isdir( Window.tmpdir ):
             os.makedirs( Window.tmpdir )
 
-        f = open( "%s/%s" % ( Window.tmpdir, Window.cache_dict_file ), 'wb' )
-        pickle.dump( Window.cache_dict, f )
+        f = open( "%s/%s" % ( Window.tmpdir, Window.cache_dict_file ), 'w' )
+        json.dump( Window.cache_dict, f )
         f.close()
     
     @staticmethod
@@ -745,7 +746,7 @@ class Window( object ):
                 raise Exception( "No audio found at: %s" % ( audio_file ) )
             else:
                 self.audio_file = audio_file
-                ( status, output ) = commands.getstatusoutput( "%s -v quiet -print_format json -show_streams %s" % ( FFPROBE, audio_file ) )
+                ( status, output ) = subprocess.getstatusoutput( "%s -v quiet -print_format json -show_streams %s" % ( FFPROBE, audio_file ) )
                 audio_info = json.loads( output )
                 for stream in audio_info['streams']:
                     if stream['codec_type'] == 'audio':
@@ -903,7 +904,7 @@ class Window( object ):
             # Lay down a background with silent audio if requested to.
             cmd = '%s -y -loop 1 -i %s -f lavfi -i aevalsrc=0 -ac %d -c:a libfdk_aac -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 -filter_complex " color=%s:size=%dx%d,setpts=PTS-STARTPTS/TB [base] ; [0] setpts=PTS-STARTPTS/TB [image]; [base] [image] overlay%s " -t %f %s' % ( FFMPEG, self.bgimage_file, audio_channels, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, background_file )
             log.info( "Running: %s" % ( cmd ) )
-            ( status, output ) = commands.getstatusoutput( cmd )
+            ( status, output ) = subprocess.getstatusoutput( cmd )
             log.debug( "Output was: %s" % ( output ) )
             if status != 0 or not os.path.exists( background_file ):
                 raise Exception( "Error producing background image video file %s with command: %s\n\nOutput was: %s" % ( background_file, cmd, output ) )
@@ -911,7 +912,7 @@ class Window( object ):
             # There was no background image, lay down a solid color with silent audio.
             cmd = '%s -y -f lavfi -i aevalsrc=0 -ac %d -c:a libfdk_aac -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264  -filter_complex " color=%s:size=%dx%d%s,setpts=PTS-STARTPTS/TB " -t %f %s' % ( FFMPEG, audio_channels, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, background_file )
             log.info( "Running: %s" % ( cmd ) )
-            ( status, output ) = commands.getstatusoutput( cmd )
+            ( status, output ) = subprocess.getstatusoutput( cmd )
             log.debug( "Output was: %s" % ( output ) )
             if status != 0 or not os.path.exists( background_file ):
                 raise Exception( "Error producing solid background file %s with command: %s\n\nOutput was: %s" % ( background_file, cmd, output ) )
@@ -932,7 +933,7 @@ class Window( object ):
 
 
             log.info( "Running: %s" % ( cmd ) )
-            ( status, output ) = commands.getstatusoutput( cmd )
+            ( status, output ) = subprocess.getstatusoutput( cmd )
             log.debug( "Output was: %s" % ( output ) )
             if status != 0 or not os.path.exists( tmpfile ):
                 raise Exception( "Error applying overlay window %s to file %s with command: %s\n\nOutput was: %s" % ( window_file, current, cmd, output ) )
@@ -949,7 +950,7 @@ class Window( object ):
                 audio_tmpfile = self.get_next_renderfile()
                 cmd = '%s -i %s -ac %d -c:a libfdk_aac -vn %s' % ( FFMPEG, self.audio_file, audio_channels, audio_tmpfile )
                 log.info( "Running: %s" % ( cmd ) )
-                ( status, output ) = commands.getstatusoutput( cmd )
+                ( status, output ) = subprocess.getstatusoutput( cmd )
                 log.debug( "Output was: %s" % ( output ) )
                 if status != 0 or not os.path.exists( audio_tmpfile ):
                     raise Exception( "Error converting audio file %s to have %d channels with command: %s\n\nOutput was: %s" % ( audio_tmpfile, audio_channels, cmd, output ) )
@@ -979,7 +980,7 @@ class Window( object ):
 
             cmd = '%s -y -i %s -i %s -ac %d -pix_fmt %s %s %s -t %f %s' % ( FFMPEG, current, audio_tmpfile, audio_channels, self.pix_fmt, afade_clause, filter_clause, self.duration, tmpfile )
             log.info( "Running: %s" % ( cmd ) )
-            ( status, output ) = commands.getstatusoutput( cmd )
+            ( status, output ) = subprocess.getstatusoutput( cmd )
             log.debug( "Output was: %s" % ( output ) )
             if status != 0 or not os.path.exists( tmpfile ):
                 raise Exception( "Error adding audio %s to file %s with command: %s\n\nOutput was: %s" % ( audio_tmpfile, current, cmd, output ) )
@@ -989,7 +990,7 @@ class Window( object ):
         tmpfile = self.get_next_renderfile()
         cmd = '%s -y -i %s -pix_fmt %s -c:a libfdk_aac -ac %d -vf copy -af " [0:a] dynaudnorm=g=3 " %s' % ( FFMPEG, current, self.pix_fmt, audio_channels, tmpfile )
         log.info( "Running: %s" % ( cmd ) )
-        ( status, output ) = commands.getstatusoutput( cmd )
+        ( status, output ) = subprocess.getstatusoutput( cmd )
         log.debug( "Output was: %s" % ( output ) )
         if status != 0 or not os.path.exists( tmpfile ):
             raise Exception( "Error adjusting volume of file %s with command: %s\n\nOutput was: %s" % ( current, cmd, output ) )
@@ -1064,7 +1065,7 @@ class Window( object ):
         cmd = cmd[:-(6+len( str( idx-1 ) ) )]
         cmd += ' " %s' % ( tmpfile )
         log.info( "Running: %s" % ( cmd ) )
-        ( status, output ) = commands.getstatusoutput( cmd )
+        ( status, output ) = subprocess.getstatusoutput( cmd )
         log.debug( "Output was: %s" % ( output ) )
         if status != 0 or not os.path.exists( tmpfile ):
             raise Exception( "Error adding watermarks to file %s with command: %s\n\nOutput was: %s" % ( current, cmd, output ) )
@@ -1100,7 +1101,7 @@ class Window( object ):
                                              file_size,
                                              file_mtime )
         md5 = hashlib.md5()
-        md5.update( clip_name )
+        md5.update( clip_name.encode( 'utf-8') )
         return md5.hexdigest()
 
 
@@ -1173,7 +1174,7 @@ class Window( object ):
             cmd = "%s -y -f concat -safe 0 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 -c:a libfdk_aac -ac %d %s" % ( FFMPEG, concat_file, self.pix_fmt, audio_channels, concat_vid )
 
             log.info( "Running: %s" % ( cmd ) )
-            ( status, output ) = commands.getstatusoutput( cmd )
+            ( status, output ) = subprocess.getstatusoutput( cmd )
             log.debug( "Output was: %s" % ( output ) )
             if status != 0 or not os.path.exists( concat_vid ):
                 raise Exception( "Error producing concatenated file %s with command: %s\n\nOutput was: %s" % ( concat_vid, cmd, output ) )
@@ -1192,7 +1193,7 @@ class Window( object ):
             cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 -c:a libfdk_aac -ac %d -filter_complex " [0:v] fifo,setpts=PTS-STARTPTS/TB [a] ; [1:v] fifo,setpts=PTS-STARTPTS/TB [b] ; [a] [b] overlay=x=0:y=0:eof_action=pass ; %s " -t %f %s' % ( FFMPEG, background_file, concat_vid, self.pix_fmt, audio_channels, audio_clause, self.duration, tmpfile )
 
             log.info( "Running: %s" % ( cmd ) )
-            ( status, output ) = commands.getstatusoutput( cmd )
+            ( status, output ) = subprocess.getstatusoutput( cmd )
             log.debug( "Output was: %s" % ( output ) )
             if status != 0 or not os.path.exists( tmpfile ):
                 raise Exception( "Error producing concatenated clip file %s with command: %s\n\nOutput was: %s" % ( tmpfile, cmd, output ) )
@@ -1228,8 +1229,8 @@ class Window( object ):
                 # Set the width to be randomly between 2/3 and 1/3th
                 # of the window width, and the height so the aspect
                 # ratio is retained.
-                ow = 2*int( self.width*scale / 2 )
-                oh = 2*int( overlay.video.height * ow / ( overlay.video.width * 2 ) )
+                ow = 2*int( self.width*scale // 2 )
+                oh = 2*int( overlay.video.height * ow // int( overlay.video.width * 2 ) )
                 ilabel = overlay_idx + 1 - overlay_group
                 filter_complex += " [%d:v] fifo,scale=width=%d:height=%d,setpts=PTS-STARTPTS+%f/TB [o%d] ; " % ( ilabel, ow, oh, overlay_start, overlay_idx )
                 
@@ -1285,7 +1286,7 @@ class Window( object ):
             filter_complex += audio_clause
             cmd += include_clause + filter_complex + ' " -map "[outv]" -map "[outa]" %s' % ( tmpfile )
             log.info( "Running: %s" % ( cmd ) )
-            ( status, output ) = commands.getstatusoutput( cmd )
+            ( status, output ) = subprocess.getstatusoutput( cmd )
             log.debug( "Output was: %s" % ( output ) )
             if status != 0 or not os.path.exists( tmpfile ):
                 raise Exception( "Error producing clip file by %s at: %s\n\nOutput was: %s" % ( cmd, tmpfile, output ) )
@@ -1315,11 +1316,11 @@ class Window( object ):
 
             xterm = ""
             if ow != self.width:
-                xterm = ":x=%d" % ( ( self.width - ow ) / 2 )
+                xterm = ":x=%d" % ( ( self.width - ow ) // 2 )
 
             yterm = ""
             if oh != self.height:
-                yterm = ":y=%s" % ( ( self.height - oh ) / 2 )
+                yterm = ":y=%s" % ( ( self.height - oh ) // 2 )
 
             if scale != 1:
                 scale_clause = "scale=width=%d:height=%d," % ( ow, oh )
@@ -1421,7 +1422,7 @@ class Window( object ):
             cmd = '%s -y -ss %f -i %s %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 -c:a libfdk_aac %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, audio_clause, self.pix_fmt, filter_clause, clip.get_duration(), filename )
             
             log.info( "Running: %s" % ( cmd ) )
-            ( status, output ) = commands.getstatusoutput( cmd )
+            ( status, output ) = subprocess.getstatusoutput( cmd )
             log.debug( "Output was: %s" % ( output ) )
             if status == 0 and os.path.exists( filename ):
                 Window.cache_dict[clip_hash] = filename
@@ -1457,9 +1458,9 @@ class Window( object ):
         # If we are very near the aspect ratio of the target
         # window snap to that ratio.
         if ( ow > ww - 2 ) and ( ow < ww + 2 ):
-            ow = ww
+            ow = int( ww )
         if ( oh > wh - 2 ) and ( oh < wh + 2 ):
-            oh = wh
+            oh = int( wh )
             
         # If we have an odd size add 1.
         if ow % 2:
@@ -1570,7 +1571,7 @@ class Window( object ):
             objects onto a single list.'''
 
             for el in l:
-                if isinstance( el, collections.Iterable ) and not isinstance( el, basestring ):
+                if isinstance( el, collections.Iterable ) and not ( isinstance( el, str ) or isinstance( el, bytes ) ):
                     for sub in flatten( el ):
                         yield sub
                 else:
