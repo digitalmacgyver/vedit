@@ -497,19 +497,36 @@ Display Configuration
 
 The ``Display`` object contains configuration that dictates how a givel ``Clip`` appears when the ``Window`` it is in is rendered.
 
-Constructor arguments
+Constructor arguments:
 
 =================== ======== ========= ====
 Argument            Required Default   Description
 =================== ======== ========= ====
-display_style       No       PAD       One of CROP, PAD, PAN, or OVERLAY
+display_style       No       vedit.PAD       One of vedit.CROP, PAD, PAN, or OVERLAY
 overlay_concurrency No       3         If display_style is OVERLAY, how many Clips may cascade at the same time
-overlay_direction   No       DOWN      If display_style is OVERLAY, what direction the Clips cascade
+overlay_direction   No       vedit.DOWN      One of UP, DOWN, LEFT, or RIGHT. If display_style is OVERLAY, what direction the Clips cascade
 overlay_min_gap     No       4         If display_style is OVERLAY, the shortest period of time between clips cascade
 pad_bgcolor         No       'Black'   If display_style is PAD, what color should be on the background of the Clip in [0x|#]RRGGBB format
-pan_direction       No       ALTERNATE If display_style is PAN, what direction the Window should pan over the Clip
+pan_direction       No       vedit.ALTERNATE One of vedit.UP, DOWN, LEFT, or RIGHT. If display_style is PAN, what direction the Window should pan over the Clip
 include_audio       No       True      Should audio from this Clip be included in the output
 =================== ======== ========= ====
+
+Public methods: None
+
+The ``OVERLAY`` ``display_style``
+---------------------------------
+
+This ``display_style`` makes the ``Clip`` be rendered as a small (randomly sized between 1/2 and 1/3 of the width of it's ``Window``) tile that cascades across the ``Window`` while it plays.  
+
+The idea here is to make a collage of images or clips.  For a silly example see https://youtu.be/K2SuPqWrG3M - the output for `Example 6: Cascade overlayed videos and images on top of a base video or image`_.
+
+When a several ``Clip``\s are rendered in a given ``Window`` with the ``OVERLAY`` ``display_style`` the behavior of the cascading is further controlled by:
+
+- ``overlay_concurrency`` - The number of clips that can be in the ``Window`` at once.
+- ``overlay_direction`` - One of ``vedit.UP``, ``DOWN``, ``LEFT``, or ``RIGHT``.  The ``Clip`` will move across the ``Window`` in this direction as it plays.
+- ``overlay_min_gap`` - The shortest time in seconds between when two ``Clip``\s will move across the ``Window``.
+
+``display_style``: When the a ``Clip`` is rendered in a ``Window``, 
 
 Back to `Table of Contents`_
 
