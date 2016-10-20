@@ -479,23 +479,37 @@ Module Concepts
 There are four main classes in the ``vedit`` module:
 
 ``Video``
-  ``Video``s represent a given video or image file on the filesystem.
+  ``Video``\s represent a given video or image file on the filesystem.
 
 ``Clip``
-  ``Clip``s represent a portion of a video with a given start and end time.  When associated with a ``Window`` and a ``Display`` a ``Clip`` can be rendered into an output video.
+  ``Clip``\s represent a portion of a video with a given start and end time.  When associated with a ``Window`` and a ``Display`` a ``Clip`` can be rendered into an output video.
 
 ``Display``
-  ``Display``s configure the properties that a given ``Clip`` has when it is rendered into a given ``Window``.
+  ``Display``\s configure the properties that a given ``Clip`` has when it is rendered into a given ``Window``.
 
 ``Window``
-  ``Window``\s are the building blocks that are used to compose ``Clip``s together.  The ``width`` and ``height`` properties of a ``Window`` determie the size of a ``Clip`` when it is rendered in that ``Window``.  In basic usage one or more ``Clip``s are associated with a ``Window`` which is then rendered.  In more advanced usage ``Window``s can include any number other ``Window``s and ``Clip``s to create complex outputs where several different ``Clip``s play at the same time.
+  ``Window``\s are the building blocks that are used to compose ``Clip``\s together.  The ``width`` and ``height`` properties of a ``Window`` determie the size of a ``Clip`` when it is rendered in that ``Window``.  In basic usage one or more ``Clip``\s are associated with a ``Window`` which is then rendered.  In more advanced usage ``Window``\s can include any number other ``Window``\s and ``Clip``\s to create complex outputs where several different ``Clip``\s play at the same time.
 
 Back to `Table of Contents`_
 
 Display Configuration
 --------------------------------------------------------------------------------
 
-Display Configuration
+The ``Display`` object contains configuration that dictates how a givel ``Clip`` appears when the ``Window`` it is in is rendered.
+
+Constructor arguments
+
+=================== ======== ========= ====
+Argument            Required Default   Description
+=================== ======== ========= ====
+display_style       No       PAD       One of CROP, PAD, PAN, or OVERLAY
+overlay_concurrency No       3         If display_style is OVERLAY, how many Clips may cascade at the same time
+overlay_direction   No       DOWN      If display_style is OVERLAY, what direction the Clips cascade
+overlay_min_gap     No       4         If display_style is OVERLAY, the shortest period of time between clips cascade
+pad_bgcolor         No       'Black'   If display_style is PAD, what color should be on the background of the Clip in [0x|#]RRGGBB format
+pan_direction       No       ALTERNATE If display_style is PAN, what direction the Window should pan over the Clip
+include_audio       No       True      Should audio from this Clip be included in the output
+=================== ======== ========= ====
 
 Back to `Table of Contents`_
 
