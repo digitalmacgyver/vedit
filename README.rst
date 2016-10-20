@@ -641,7 +641,7 @@ audio_desc                No       None            If a string is specified it's
 z_index                   No       None            If not specified Windows will be placed on top of one another in the order they are created, older Windows having lower z_indexes.  If specified should be a numeric value, and Windows will be placed underneath other Windows of higher z_index.
 pix_fmt                   No       None            If specified the pixel format of the output video.  Defaults to: yuv420p
 sample_aspect_ratio       No       None            The SAR of a video is the aspect ratio of individual pixels.  If specified must be in W:H format. The SAR tine ``Window`` should have when rendered.  Defaults to the SAR of the source Video that has provided Clips to this Window.  If more than one SAR is present in the inputs a WARNING is issued and 1:1 is used.
-overlay_batch_concurrency No 16              ffmpeg seems to have problems when many overlays are used, resulting in crashes or errors in the resultant video.  This parameter configures the maximum number of overlays that will be composed at one time during rendering.  If you are having mysterious ffmpeg errors during rendering, try lowering this.
+overlay_batch_concurrency No       16              ffmpeg seems to have problems when many overlays are used, resulting in crashes or errors in the resultant video.  This parameter configures the maximum number of overlays that will be composed at one time during rendering.  If you are having mysterious ffmpeg errors during rendering, try lowering this.
 ========================= ======== =============== ====
 
 **Public methods:** None
