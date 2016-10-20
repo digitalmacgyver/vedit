@@ -436,7 +436,7 @@ Example output: https://youtu.be/1PrADMtqdRU
     for video_file in glob.glob( "./examples/*00[5-9].mp4" ):
         video_clips.append( vedit.Clip( end=3, video=vedit.Video( video_file ) ) )
 
-    # With these options this will randomize the input clips amongst
+    # With these options this will randomize the input clips among
     # the two windows, and keep recycling them until the result is 45
     # seconds long.
     vedit.distribute_clips( clips=video_clips, 

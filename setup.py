@@ -35,4 +35,5 @@ setup( name='vedit',
            'Topic :: Multimedia :: Video :: Conversion',
        ],
        keywords='video ffmpeg',
+       include_package_data=True,
        zip_safe=False )
