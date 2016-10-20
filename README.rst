@@ -492,6 +492,8 @@ There are four main classes in the ``vedit`` module:
 
 Back to `Table of Contents`_
 
+----
+
 Display Configuration
 --------------------------------------------------------------------------------
 
@@ -499,17 +501,17 @@ The ``Display`` object contains configuration that dictates how a givel ``Clip``
 
 Constructor arguments:
 
-=================== ======== ========= ====
-Argument            Required Default   Description
-=================== ======== ========= ====
+=================== ======== =============== ====
+Argument            Required Default         Description
+=================== ======== =============== ====
 display_style       No       vedit.PAD       One of vedit.CROP, PAD, PAN, or OVERLAY
-overlay_concurrency No       3         If display_style is OVERLAY, how many Clips may cascade at the same time
+overlay_concurrency No       3               If display_style is OVERLAY, how many Clips may cascade at the same time
 overlay_direction   No       vedit.DOWN      One of UP, DOWN, LEFT, or RIGHT. If display_style is OVERLAY, what direction the Clips cascade
-overlay_min_gap     No       4         If display_style is OVERLAY, the shortest period of time between clips cascade
-pad_bgcolor         No       'Black'   If display_style is PAD, what color should be on the background of the Clip in [0x|#]RRGGBB format
+overlay_min_gap     No       4               If display_style is OVERLAY, the shortest period of time between clips cascade
+pad_bgcolor         No       'Black'         If display_style is PAD, what color should be on the background of the Clip in [0x|#]RRGGBB format
 pan_direction       No       vedit.ALTERNATE One of vedit.UP, DOWN, LEFT, or RIGHT. If display_style is PAN, what direction the Window should pan over the Clip
-include_audio       No       True      Should audio from this Clip be included in the output
-=================== ======== ========= ====
+include_audio       No       True             Should audio from this Clip be included in the output
+=================== ======== =============== ====
 
 Public methods: None
 
@@ -529,6 +531,8 @@ When a several ``Clip``\s are rendered in a given ``Window`` with the ``OVERLAY`
 ``display_style``: When the a ``Clip`` is rendered in a ``Window``, 
 
 Back to `Table of Contents`_
+
+----
 
 Windows
 --------------------------------------------------------------------------------
