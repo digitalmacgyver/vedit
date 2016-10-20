@@ -602,7 +602,7 @@ Back to `Table of Contents`_
 Windows
 --------------------------------------------------------------------------------
 
-The ``Window`` object is used to compose ``Clip``s together into a rendered video output.  
+The ``Window`` object is used to compose ``Clip`` objects together into a rendered video output.  
 
 A ``Window`` has a background of a solid color or static image, and optionally may have:
 
@@ -636,7 +636,7 @@ The duration of a ``Window``\'s rendered video output will be:
 
 - The ``duration`` attribute, if set during construction
 - Otherwise, if an ``audio_file`` is specified during construction, the length of that audio stream
-- Otherwise, the longest computed time it will take the ``Clip``s in this or any of its child ``Window``s to play
+- Otherwise, the longest computed time it will take the clips in this or any of its child windows to play
 
 
 **Constructor arguments:** (presented in rough order of importance)
