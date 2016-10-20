@@ -529,7 +529,7 @@ Each ``Clip`` can its own ``Display``, and so can each ``Window``.  When conside
 2. Otherwise, if the ``Window`` has a ``Display`` object, it is used.
 3. Otherwise, the ``Default`` display elements described below are used.
 
-Constructor arguments:
+**Constructor arguments:**
 
 =================== ======== =============== ====
 Argument            Required Default         Description
@@ -543,7 +543,7 @@ pan_direction       No       vedit.ALTERNATE One of vedit.UP, DOWN, LEFT, or RIG
 include_audio       No       True             Should audio from this Clip be included in the output
 =================== ======== =============== ====
 
-Public methods: None
+**Public methods:** None
 
 The ``OVERLAY`` ``display_style``
 ---------------------------------
@@ -573,10 +573,9 @@ As in `Example 2: Resize a video with PAD, CROP, or PAN`_ when: https://youtu.be
 
 As in `Example 2: Resize a video with PAD, CROP, or PAN`_ when: https://youtu.be/Qmbgrr6WJEY is padded onto a blue background the result is: https://youtu.be/2bTdwEzraxA
 
-**PAN**: The ``Clip`` will be scaled to the smallest size such that both its height and width are at least as large as the ``Window`` it is in.  The ``Clip`` then is scrolled through the ``Window`` in the direction specified by ``pad_direction``.
+**PAN**: The ``Clip`` will be scaled to the smallest size such that both its height and width are at least as large as the ``Window`` it is in.  The ``Clip`` then is scrolled through the ``Window`` in the direction specified by ``pan_direction``.  ``pan_direction`` is one of ``UP``\/``RIGHT``, ``DOWN``\/``LEFT``, or ``ALTERNATE``.
 
 As in `Example 2: Resize a video with PAD, CROP, or PAN`_ when: https://youtu.be/Qmbgrr6WJEY is panned with ``pan_direction`` of ``vedit.RIGHT`` the result is: https://youtu.be/lCpbnudnFyc
-
 
 Back to `Table of Contents`_
 
@@ -585,9 +584,71 @@ Back to `Table of Contents`_
 Windows
 --------------------------------------------------------------------------------
 
-Windows
+The ``Window`` object is used to compose ``Clip``s together into a rendered video output.  
+
+A ``Window`` has a background of a solid color or static image, and optionally may have:
+
+- A list of ``Clip``s that it will show in order (perhaps cascading through the ``Window`` as they play if the ``Display.display_style`` for that ``Clip`` is ``OVERLAY``). 
+- A list of other ``Window``s that are rendered on top of it, for example ::
+
+    +------------------------------------------+
+    |                  Window 1                |
+    |  +-------------------------+             |
+    |  | Window 2                |  +---------+|
+    |  |                         |  | Window 3||
+    |  |               +------------|         ||
+    |  +---------------| Window 4   |         ||
+    |                  |            |         ||
+    |                  | +---------+|         ||
+    |                  | | Window 5|+---------+|
+    |                  | +---------+  |        |
+    |                  +--------------+        |
+    +------------------------------------------+
+
+In the example above there are five ``Window``s:
+
+- Window 1 has child ``Window``\s: Window 2, Window 3, and Window 4
+- Window 4 has child ``Window``: Window 5
+
+Each of these five ``Window``s would have it's own content of ``Clip``s, background images, and/or ``Watermark``s.
+
+The duration of a ``Window``\'s rendered video output will be:
+
+- The ``duration`` attribute, if set during construction
+- Otherwise, if an ``audio_file`` is specified during construction, the length of that audio stream
+- Otherwise, the longest computed time it will take the ``Clip``s in this or any of its child ``Window``s to play
+
+
+**Constructor arguments:** (presented in rough order of importance)
+
+=================== ======== =============== ====
+Argument            Required Default         Description
+=================== ======== =============== ====
+windows             No       None            A list of child Windows.  May be set after construction by assigning to the ``.windows`` attribute
+clips               No       None            A list of Clips to render in this Window.  May be set after construction by assigning to the ``.clips`` attribute
+bgcolor             No       'Black'         The background color for this Window that will be shown in regions of this Window that do not otherwise have content (from a Clip, a child Window, or Watermark). May be set with a string in [0x|#]RRGGBB format.
+bgimage_file        No       None            If provided, a background image for this Window that will be shown in regions or times where there is not otherwise content.  No scaling is done to this image, so it must be sized at the desired width and height.
+duration            No       None            If specified, the duration of this Window when rendered.  Otherwise will default first to the duration of the optional audio_file for this Window, and then to the maximum duration of the Clips in this Window or any of it's child Windows.
+width               No       1280            Width in pixels of this Window
+height              No       720             Height in pixels of this Window
+output_file         No       ./output.mp4    Where to place the output video for when this Window is rendered.  Not needed for Windows that are children of other Windows.
+display             No       None            An optional Display object that specifies the Display configuration for Clips in this Window. **NOTE**: If a Clip has it's own Display object, it will override the Display configuration of the Window it is placed in.  The default values are: ``display_style=PAD``, ``pad_bgcolor='Black'``, ``include_audio=True``.
+audio_file          No       None            If specified the path to an audio file whose first audio stream will be added to the output of this Window.
+x                   No       0               If this Window is a child of another Window, the x coordinate of the top left corner of this Window, as measured from the top left of the parent Window
+y                   No       0               If this Window is the child of another Window, the y coordinate of the top left corner of this Window, as measured from the top left of the parent Window
+watermarks          No       None            A list of Watermark objects that can be used to place static images over everything else in this Window at certain times.
+audio_desc          No       None            If a string is specified it's text will be placed at the bottom left of the window 5 seconds prior to the end of the video.
+z_index             No       None            If not specified Windows will be placed on top of one another in the order they are created, older Windows having lower z_indexes.  If specified should be a numeric value, and Windows will be placed underneath other Windows of higher z_index.
+pix_fmt             No       None            If specified the pixel format of the output video.  Defaults to: yuv420p
+sample_aspect_ratio No       None            The SAR of a video is the aspect ratio of individual pixels.  If specified must be in W:H format. The SAR tine ``Window`` should have when rendered.  Defaults to the SAR of the source Video that has provided Clips to this Window.  If more than one SAR is present in the inputs a WARNING is issued and 1:1 is used.
+overlay_batch_concurrency No 16              ffmpeg seems to have problems when many overlays are used, resulting in crashes or errors in the resultant video.  This parameter configures the maximum number of overlays that will be composed at one time during rendering.  If you are having mysterious ffmpeg errors during rendering, try lowering this.
+=================== ======== =============== ====
+
+**Public methods:** None
 
 Back to `Table of Contents`_
+
+----
 
 Videos and Clips
 --------------------------------------------------------------------------------
@@ -596,6 +657,8 @@ Videos and Clips
 
 Back to `Table of Contents`_
 
+----
+
 Watermarks
 --------------------------------------------------------------------------------
 
@@ -603,12 +666,16 @@ Watermarks
 
 Back to `Table of Contents`_
 
+----
+
 Audio
 --------------------------------------------------------------------------------
 
 Audio
 
 Back to `Table of Contents`_
+
+----
 
 Logging Output
 ================================================================================
@@ -624,7 +691,17 @@ info
 warn
   Only notices where vedit is making some determination about what to do with ambiguous inputs
 
+To enable logging output from a script using ``vedit`` do something like: ::
+
+    import logging
+    logging.basicConfig()
+    log = logging.getLogger()
+    log.setLevel( logging.DEBUG )
+
+
 Back to `Table of Contents`_
+
+----
 
 Getting Help
 ================================================================================
@@ -639,6 +716,8 @@ Contributing
 Feel free to fork and issue a pull request at: https://github.com/digitalmacgyver/vedit
 
 Back to `Table of Contents`_
+
+----
 
 Odds and Ends
 ================================================================================
