@@ -22,6 +22,8 @@ There are numerous stumbling blocks to these tasks - vedit makes the above thing
 - Different frame rates
 - Different audio streams and channels
 
+----
+
 Installation
 ================================================================================
 
@@ -34,6 +36,8 @@ Python dependencies other than a Python 2.7 interpreter with the
 standard library, you can just download from the project GitHub
 repository and put the ``vedit`` directory in your Python path.
 
+----
+
 Before You Begin
 ================================================================================
 
@@ -44,6 +48,8 @@ vedit depends on the ``ffmpeg`` and ``ffprobe`` programs from the FFmpeg_ projec
 (``--enable-libfreetype --enable-libfontconfig`` only needed if the ``audio_desc`` option is used).
 
 .. _FFmpeg: https://ffmpeg.org/
+
+----
 
 Table of Contents
 ================================================================================
@@ -71,6 +77,8 @@ Table of Contents
 - `Contributing`_
 - `Odds and Ends`_
 
+----
+
 Examples
 ================================================================================
 
@@ -89,6 +97,8 @@ All the examples below begin with the following boilerplate, and assume the ``./
   log.setLevel( logging.DEBUG )
    
 Back to `Table of Contents`_
+
+----
 
 Example 1: Clip 2 seconds out of the middle of a video
 --------------------------------------------------------------------------------
@@ -111,6 +121,8 @@ Link to example output: https://youtu.be/FEr6WMUx_4A
     log.info( "Output file at %s" % ( output_file ) )
 
 Back to `Table of Contents`_
+
+----
 
 Example 2: Resize a video with PAD, CROP, or PAN
 --------------------------------------------------------------------------------
@@ -161,6 +173,8 @@ Links to example outputs:
 
 Back to `Table of Contents`_
 
+----
+
 Example 3: Put two videos next to each other
 --------------------------------------------------------------------------------
 
@@ -200,6 +214,8 @@ Example output: https://youtu.be/fsYw2jLyuQ4
 
 
 Back to `Table of Contents`_
+
+----
 
 Example 4: Replace the audio track of a video
 --------------------------------------------------------------------------------
@@ -244,6 +260,8 @@ Example outputs:
     log.info( "Replaced audio in output: %s" % ( output_file ) )
 
 Back to `Table of Contents`_
+
+----
 
 Example 5: Overlay videos on top of other videos
 --------------------------------------------------------------------------------
@@ -315,6 +333,8 @@ Example outputs:
     log.info( "Made multi-video composition with single audio track at: %s" % ( output_file ) )
 
 Back to `Table of Contents`_
+
+----
 
 Example 6: Cascade overlayed videos and images on top of a base video or image
 --------------------------------------------------------------------------------
@@ -400,6 +420,8 @@ output below.
 
 Back to `Table of Contents`_
 
+----
+
 Example 7: Add an overlay image, such as a watermark
 --------------------------------------------------------------------------------
 
@@ -473,6 +495,8 @@ Example output: https://youtu.be/1PrADMtqdRU
 
 Back to `Table of Contents`_
 
+----
+
 Module Concepts
 ================================================================================
 
@@ -502,7 +526,7 @@ The ``Display`` object contains configuration that dictates how a given ``Clip``
 Each ``Clip`` can its own ``Display``, and so can each ``Window``.  When considering what ``Display`` settings to use for a given ``Clip`` the following selections are made:
 
 1. If the ``Clip`` has a ``Display`` object, it is used.
-2. Otherwise, if the ``Window has a ``Display`` object, it is used.
+2. Otherwise, if the ``Window`` has a ``Display`` object, it is used.
 3. Otherwise, the ``Default`` display elements described below are used.
 
 Constructor arguments:
