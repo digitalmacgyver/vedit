@@ -488,7 +488,7 @@ There are four main classes in the ``vedit`` module:
   ``Display``s configure the properties that a given ``Clip`` has when it is rendered into a given ``Window``.
 
 ``Window``
-  ``Window`` s are the building blocks that are used to compose ``Clip``s together.  The ``width`` and ``height`` properties of a ``Window`` determie the size of a ``Clip`` when it is rendered in that ``Window``.  In basic usage one or more ``Clip``s are associated with a ``Window`` which is then rendered.  In more advanced usage ``Window``s can include any number other ``Window``s and ``Clip``s to create complex outputs where several different ``Clip``s play at the same time.
+  ``Window``\s are the building blocks that are used to compose ``Clip``s together.  The ``width`` and ``height`` properties of a ``Window`` determie the size of a ``Clip`` when it is rendered in that ``Window``.  In basic usage one or more ``Clip``s are associated with a ``Window`` which is then rendered.  In more advanced usage ``Window``s can include any number other ``Window``s and ``Clip``s to create complex outputs where several different ``Clip``s play at the same time.
 
 Back to `Table of Contents`_
 
