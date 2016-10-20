@@ -31,8 +31,8 @@ Assuming you have ``pip`` installed:
 
 However, there is nothing in the package that is special, and no
 Python dependencies other than a Python 2.7 interpreter with the
-standard library, you can just download this repository and put the
-``vedit`` directory in your Python path.
+standard library, you can just download from the project GitHub
+repository and put the ``vedit`` directory in your Python path.
 
 Before You Begin
 ================================================================================
@@ -535,7 +535,7 @@ Back to `Table of Contents`_
 Getting Help
 ================================================================================
 
-File an issue on Github for this project https://github.com/digitalmacgyver/vedit/issues
+File an issue on GitHub for this project https://github.com/digitalmacgyver/vedit/issues
 
 Back to `Table of Contents`_
 
