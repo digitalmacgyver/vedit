@@ -503,16 +503,16 @@ Module Concepts
 There are four main classes in the ``vedit`` module:
 
 ``Video``
-  ``Video``\s represent a given video or image file on the filesystem.
+  ``Video`` represents a given video or image file on the filesystem.
 
 ``Clip``
-  ``Clip``\s represent a portion of a video with a given start and end time.  When associated with a ``Window`` and a ``Display`` a ``Clip`` can be rendered into an output video.
+  ``Clip`` represents a portion of a video with a given start and end time.  When associated with a ``Window`` and a ``Display`` a ``Clip`` can be rendered into an output video.
 
 ``Display``
-  ``Display``\s configure the properties that a given ``Clip`` has when it is rendered into a given ``Window``.
+  ``Display`` configures the properties that a given ``Clip`` has when it is rendered into a given ``Window``.
 
 ``Window``
-  ``Window``\s are the building blocks that are used to compose ``Clip``\s together.  The ``width`` and ``height`` properties of a ``Window`` determine the size of a ``Clip`` when it is rendered in that ``Window``.  In basic usage one or more ``Clip``\s are associated with a ``Window`` which is then rendered.  In more advanced usage ``Window``\s can include any number other ``Window``\s and ``Clip``\s to create complex outputs where several different ``Clip``\s play at the same time.
+  ``Window`` objects are the building blocks that are used to compose ``Clip`` objects together.  The ``width`` and ``height`` properties of a ``Window`` determine the size of a ``Clip`` when it is rendered in that ``Window``.  In basic usage one or more ``Clip`` objects are associated with a ``Window`` which is then rendered.  In more advanced usage a ``Window`` can include any number of child ``Window`` and ``Clip`` objects to create complex outputs where several different clips play at the same time.
 
 Back to `Table of Contents`_
 
@@ -552,11 +552,11 @@ This ``display_style`` makes the ``Clip`` be rendered as a small (randomly sized
 
 The idea here is to make a collage of images or clips.  For a silly example see https://youtu.be/K2SuPqWrG3M - the output for `Example 6: Cascade overlayed videos and images on top of a base video or image`_.
 
-When a several ``Clip``\s are rendered in a given ``Window`` with the ``OVERLAY`` ``display_style`` the behavior of the cascading is further controlled by:
+When a several ``Clips`` are rendered in a given ``Window`` with the ``OVERLAY`` ``display_style`` the behavior of the cascading is further controlled by:
 
 - ``overlay_concurrency`` - The number of clips that can be in the ``Window`` at once.
 - ``overlay_direction`` - One of ``vedit.UP``, ``DOWN``, ``LEFT``, or ``RIGHT``.  The ``Clip`` will move across the ``Window`` in this direction as it plays.
-- ``overlay_min_gap`` - The shortest time in seconds between when two ``Clip``\s will move across the ``Window``.
+- ``overlay_min_gap`` - The shortest time in seconds between when two ``Clip`` objects will move across the ``Window``.
 
 CROP, PAD, and PAN
 ------------------
@@ -607,7 +607,7 @@ The ``Window`` object is used to compose ``Clip``s together into a rendered vide
 A ``Window`` has a background of a solid color or static image, and optionally may have:
 
 - A list of ``Clip``s that it will show in order (perhaps cascading through the ``Window`` as they play if the ``Display.display_style`` for that ``Clip`` is ``OVERLAY``). 
-- A list of other ``Window``\s that are rendered on top of it, for example ``Window``\s can be composed like: ::
+- A list of other ``Window`` objects that are rendered on top of it, for example several windows can be composed like: ::
 
     +------------------------------------------+
     |                  Window 1                |
@@ -623,14 +623,14 @@ A ``Window`` has a background of a solid color or static image, and optionally m
     |                  +--------------+        |
     +------------------------------------------+
 
-In the example above there are five ``Window``\s:
+In the example above there are five windows:
 
-- Window 1 has child ``Window``\s: Window 2, Window 3, and Window 4
+- Window 1 has child ``Window`` objects: Window 2, Window 3, and Window 4
 - Window 4 has child ``Window``: Window 5
 
-Each of these five ``Window``\s would have it's own content of ``Clip``\s, background images, and/or ``Watermark``\s.
+Each of these five ``Window`` objects would have it's own content of Clips, background images, and/or ``Watermark`` objects.
 
-The duration of a ``Window``\s rendered video output will be:
+The duration of a ``Window``\'s rendered video output will be:
 
 - The ``duration`` attribute, if set during construction
 - Otherwise, if an ``audio_file`` is specified during construction, the length of that audio stream
@@ -666,7 +666,7 @@ overlay_batch_concurrency No       16              ffmpeg seems to have problems
 
 - ``.render()`` - Compose this ``Window``\'s: ``bgcolor``, ``bgimage_file``, ``audio_file``, ``clips``, child ``windows``, ``watermarks``, and ``audio_desc`` into a video of ``width`` with and ``height`` height and place the output at ``output_file``.
 
-- ``compute_duration( clips, include_overlay_timing=False )`` - Return a float of how long the ``Clip``\s in the ``clips`` list input would take to render in this ``Window``.  If the optional ``include_overlay_timing`` argument is true then instead a tuple will be returned, the first element of which is the duration that would result from the ``clips``, and the second is a list of the start and end times of any ``clips`` whose ``Display.display_type`` is ``OVERLAY``.
+- ``compute_duration( clips, include_overlay_timing=False )`` - Return a float of how long the Clips in the ``clips`` list input would take to render in this ``Window``.  If the optional ``include_overlay_timing`` argument is true then instead a tuple will be returned, the first element of which is the duration that would result from the ``clips``, and the second is a list of the start and end times of any ``clips`` whose ``Display.display_type`` is ``OVERLAY``.
 
 **Window Examples:** ::
  
@@ -721,7 +721,7 @@ constructor argument.
 ========================= ======== =============== ====
 Argument                  Required Default         Description
 ========================= ======== =============== ====
-filename                  Yes      -               The path to a source input file.
+filename                  Yes      None            The path to a source input file.
 ========================= ======== =============== ====
 
 **Video Public methods:** 
@@ -734,7 +734,7 @@ filename                  Yes      -               The path to a source input fi
 ========================= ======== =============== ====
 Argument                  Required Default         Description
 ========================= ======== =============== ====
-video                     Yes      -               A Video object to extract this Clip from
+video                     Yes      None            A Video object to extract this Clip from
 start                     No       0               The time in seconds from the start of the Video this Clip should begin at
 end                       No       End of Video    The time in seconds from the start of the Video this Clip should end at. **NOTE:** The end time is the absolute end time in the source Video, not relative to the start time of this Clip.
 display                   No       None            If specified, a Display object that determines how this Clip should be rendered
@@ -774,10 +774,10 @@ The ``Watermark`` object gives an easy way to place an image or
 rectangle of a solid color on top of a resulting Window over a certain
 time in the video.
 
-``Watermark``\s are applied to a Window by sending a list of them to
-the ``watermarks`` constructor argument for the ``Window``, or can be
-applied after construction by setting the ``.watermarks`` attribute of
-a ``Window``.
+``Watermark`` objects are applied to a Window by sending a list of
+them to the ``watermarks`` constructor argument for the ``Window``, or
+can be applied after construction by setting the ``.watermarks``
+attribute of a ``Window``.
 
 **NOTE:** The image file of a watermark is used as is with no scaling,
  you must ensure the size of the watermark file is appropriate to the
@@ -789,8 +789,8 @@ a ``Window``.
 Argument                  Required Default         Description
 ========================= ======== =============== ====
 filename                  Yes      -               Path to an image file to use for the Watermark.  Mutually exclusive with bgcolor.
-x                         No       "0"             Passed to the ffmpeg overlay filter's x argument to position this watermark.  Can be a simple numeric value which will be interpreted as a pixel offset from the left, or something more complex like: "main_w-overlay_w-10" to position near the right of the screen.
-y                         No       "0"             Passed to the ffmpeg overlay filter's y argument to position this watermark.  Can be a simple numeric value which will be interpreted as a pixel offset from the top, or something more complex like: "trunc((main_h-overlay_h)/2)" to position vertically center.
+x                         No       "0"             Passed to the ffmpeg overlay filter's x argument to position this watermark.  Can be a simple numeric value which will be interpreted as a pixel offset from the left, or something more complex like: ``"main_w-overlay_w-10"`` to position near the right of the screen.
+y                         No       "0"             Passed to the ffmpeg overlay filter's y argument to position this watermark.  Can be a simple numeric value which will be interpreted as a pixel offset from the top, or something more complex like: ``"trunc((main_h-overlay_h)/2)"`` to position vertically center.
 fade_in_start             No       None            If specified the watermark will begin to appear at fade_in_start seconds.  Negative values are interpreted as offsets from the end of the video.
 fade_in_duration          No       None            If specified, the watermark will fade in over this many seconds to full opacity.
 fade_out_start            No       None            If specified, the watermark will begin to vanish at fade_out_start seconds.  Negative values are interpreted as offsets from the end of the video.
@@ -836,7 +836,7 @@ There are a few ways to manipulate the audio of the output:
 
 All ``Clip`` and ``Window`` who have audio present will see their audio mixed together in the output.
 
-Finally, for ``Window``\s with an ``audio_file`` argument only, if the audio file is longer than the ``duration`` of the window, the volume of that ``audio_file`` stream will fade out over the last 5 seconds of the ``Window``\'s duration.
+Finally, for ``Window`` objects with an ``audio_file`` argument, if the audio file is longer than the ``duration`` of the window, the volume of that ``audio_file`` stream will fade out over the last 5 seconds of the duration of the ``Window``.
 
 
 Back to `Table of Contents`_
