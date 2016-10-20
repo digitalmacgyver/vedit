@@ -577,6 +577,24 @@ As in `Example 2: Resize a video with PAD, CROP, or PAN`_ when: https://youtu.be
 
 As in `Example 2: Resize a video with PAD, CROP, or PAN`_ when: https://youtu.be/Qmbgrr6WJEY is panned with ``pan_direction`` of ``vedit.RIGHT`` the result is: https://youtu.be/lCpbnudnFyc
 
+**Display Examples:** ::
+
+   # A display that will crop the input and remove the audio:
+   crop_silent = Display( display_style=vedit.CROP, include_audio=False )
+
+   # A display that will pad the input with a green background and include the audio from it:
+   pad = Display( display_style=vedit.PAD, pad_bgcolor='Green', include_audio=True )
+   # Or - more concisely relying on the defaults values for display_style and include_audio:
+   pad = Display( pad_bgcolor='Green' )
+
+   # A display that will have up to 5 clips cascading over the Window
+   at a time, starting no more than once a second, and moving from top
+   to bottom:
+   cascade_5 = Display( display_style=vedit.OVERLAY, overlay_concurrency=5, overlay_min_gap=1 )
+
+   # A display that will pan over the input from bottom to top or right to left (depending on whether the Clip is taller or wider than the Window it is in):
+   pan_up = Display( display_style=vedit.PAN, pan_direction=vedit.UP )
+
 Back to `Table of Contents`_
 
 ----
@@ -632,7 +650,7 @@ duration                  No       None            If specified, the duration of
 width                     No       1280            Width in pixels of this Window
 height                    No       720             Height in pixels of this Window
 output_file               No       ./output.mp4    Where to place the output video for when this Window is rendered.  Not needed for Windows that are children of other Windows.
-display                   No       None            An optional Display object that specifies the Display configuration for Clips in this Window. **NOTE**: If a Clip has it's own Display object, it will override the Display configuration of the Window it is placed in.  The default values are: ``display_style=PAD``, ``pad_bgcolor='Black'``, ``include_audio=True``.
+display                   No       None            An optional Display object that specifies the Display configuration for Clips in this Window. **NOTE**: If a Clip has its own Display object, it will override the Display configuration of the Window it is placed in.  The default values are: ``display_style=PAD``, ``pad_bgcolor='Black'``, ``include_audio=True``.
 audio_file                No       None            If specified the path to an audio file whose first audio stream will be added to the output of this Window.
 x                         No       0               If this Window is a child of another Window, the x coordinate of the top left corner of this Window, as measured from the top left of the parent Window
 y                         No       0               If this Window is the child of another Window, the y coordinate of the top left corner of this Window, as measured from the top left of the parent Window
@@ -644,7 +662,46 @@ sample_aspect_ratio       No       None            The SAR of a video is the asp
 overlay_batch_concurrency No       16              ffmpeg seems to have problems when many overlays are used, resulting in crashes or errors in the resultant video.  This parameter configures the maximum number of overlays that will be composed at one time during rendering.  If you are having mysterious ffmpeg errors during rendering, try lowering this.
 ========================= ======== =============== ====
 
-**Public methods:** None
+**Public methods:** 
+
+- ``.render()`` - Compose this ``Window``\'s: ``bgcolor``, ``bgimage_file``, ``audio_file``, ``clips``, child ``windows``, ``watermarks``, and ``audio_desc`` into a video of ``width`` with and ``height`` height and place the output at ``output_file``.
+
+- ``compute_duration( clips, include_overlay_timing=False )`` - Return a float of how long the ``Clip``\s in the ``clips`` list input would take to render in this ``Window``.  If the optional ``include_overlay_timing`` argument is true then instead a tuple will be returned, the first element of which is the duration that would result from the ``clips``, and the second is a list of the start and end times of any ``clips`` whose ``Display.display_type`` is ``OVERLAY``.
+
+**Window Examples:** ::
+ 
+  # Let's assume we have some existing media objects / files to work with:
+  clip1 = vedit.Clip( ... )
+  clip2 = vedit.Clip( ... )
+  clip3 = vedit.Clip( ... )
+  watermark = vedit.Watermark( ... )
+  background_image = "./media/background_01.jpg"
+  song = "./media/song.mp3"
+
+  # A 640x480 window that uses the default Display properties (overridden on a Clip by Clip basis if they have their own Display settings):
+  tv = vedit.Window( clips=[ clip1, clip2 ], width=640, height=480 )
+
+  # Let's embed the tv window in a 1080x720 window near the top left
+  # (50 pixels from the left, 60 from the top), with a background_image.
+  #
+  # We'll make the hd window 30 seconds long.
+  #
+  # We'll add our song to the hd window.
+  #
+  # Note: 1080x720 is the default resolution for a Window, so we don't have to set it.
+
+  hd = vedit.Window( windows=[ tv ], bgimage_file=background_image, x=50, y=60,
+                     duration=30, audio_file=song )
+
+  # Let's add a clips to the hd window.
+  hd.clips.append( clip3 )
+
+  # Let's render the result.
+  #  
+  # Since we didn't set output_file on the hd Window, the output will
+  # be placed in ./output.mp4
+  hd.render()
+
 
 Back to `Table of Contents`_
 
@@ -653,7 +710,58 @@ Back to `Table of Contents`_
 Videos and Clips
 --------------------------------------------------------------------------------
 
-Videos and Clips
+The ``Video`` and ``Clip`` objects are tightly related.  
+
+A ``Video`` represents a source input file.  The primary use of the
+``Video`` object is as an input to the ``Clip`` object's ``video``
+constructor argument.
+
+**Video Constructor arguments:**
+
+========================= ======== =============== ====
+Argument                  Required Default         Description
+========================= ======== =============== ====
+filename                  Yes      -               The path to a source input file.
+========================= ======== =============== ====
+
+**Video Public methods:** 
+
+- ``get_width()`` - Return the width of this video in pixels
+- ``get_height()`` - Return the height of this video in pixels
+
+**Clip Constructor arguments:** 
+
+========================= ======== =============== ====
+Argument                  Required Default         Description
+========================= ======== =============== ====
+video                     Yes      -               A Video object to extract this Clip from
+start                     No       0               The time in seconds from the start of the Video this Clip should begin at
+end                       No       End of Video    The time in seconds from the start of the Video this Clip should end at. **NOTE:** The end time is the absolute end time in the source Video, not relative to the start time of this Clip.
+display                   No       None            If specified, a Display object that determines how this Clip should be rendered
+========================= ======== =============== ====
+
+**Clip Public methods:** 
+
+- ``get_duration()`` - Return the width of this video in pixels
+- ``get_height()`` - Return the height of this video in pixels
+
+**Video and Clip Examples:** ::
+
+  video1 = vedit.Video( "./media/video01.avi" )
+  video2 = vedit.Video( "./media/video02.wmv" )
+
+  # All of video 1
+  clip1_all = vedit.Clip( video1 )
+
+  # Bits of video2, with Display settings that override whatever the
+  # Display settings of the Windows these are eventually included in.
+  vid2_display = Display( display_style=vedit.OVERLAY, include_audio=False )
+  # From second 3-8.5
+  clip2_a = vedit.Clip( video2, start=3, end=8.5, display=vid2_display )
+  # From second 12-40
+  clip2_b = vedit.Clip( video2, start=12, end=40, display=vid2_display )
+  # From second 99 to the end
+  clip2_c = vedit.Clip( video2, start=99, display=vid2_display )
 
 Back to `Table of Contents`_
 
@@ -662,7 +770,56 @@ Back to `Table of Contents`_
 Watermarks
 --------------------------------------------------------------------------------
 
-Watermarks
+The ``Watermark`` object gives an easy way to place an image or
+rectangle of a solid color on top of a resulting Window over a certain
+time in the video.
+
+``Watermark``\s are applied to a Window by sending a list of them to
+the ``watermarks`` constructor argument for the ``Window``, or can be
+applied after construction by setting the ``.watermarks`` attribute of
+a ``Window``.
+
+**NOTE:** The image file of a watermark is used as is with no scaling,
+ you must ensure the size of the watermark file is appropriate to the
+ size of the ``Window`` it is placed in.
+
+**Constructor arguments:** 
+
+========================= ======== =============== ====
+Argument                  Required Default         Description
+========================= ======== =============== ====
+filename                  Yes      -               Path to an image file to use for the Watermark.  Mutually exclusive with bgcolor.
+x                         No       "0"             Passed to the ffmpeg overlay filter's x argument to position this watermark.  Can be a simple numeric value which will be interpreted as a pixel offset from the left, or something more complex like: "main_w-overlay_w-10" to position near the right of the screen.
+y                         No       "0"             Passed to the ffmpeg overlay filter's y argument to position this watermark.  Can be a simple numeric value which will be interpreted as a pixel offset from the top, or something more complex like: "trunc((main_h-overlay_h)/2)" to position vertically center.
+fade_in_start             No       None            If specified the watermark will begin to appear at fade_in_start seconds.  Negative values are interpreted as offsets from the end of the video.
+fade_in_duration          No       None            If specified, the watermark will fade in over this many seconds to full opacity.
+fade_out_start            No       None            If specified, the watermark will begin to vanish at fade_out_start seconds.  Negative values are interpreted as offsets from the end of the video.
+fade_out_duration         No       None            If specified, the watermark will fade out over this many seconds to full transparency.
+bgcolor                   No       None            Mutually exclusive with filename.  If specified, the width and height arguments are required, and the Watermark will take the form of a rectangle of that size and color.
+========================= ======== =============== ====
+
+**Watermark Public methods:** None
+
+**Watermark Examples:** ::
+
+  # Let's assume we have an existing Window we want to apply watermarks to.
+  window = vedit.Window( ... )
+  
+  # And a watermark image.
+  watermark_file = "./media/watermark_corner.png"
+
+  # Let's add the watermark image in the bottom right of the video.
+  watermark_image = vedit.Watermark( filename=watermark_file, x="main_w-overlay_w-10", y="main_h-overlay_h-10" )
+
+  # Let's fade in the window from white over 3 seconds.
+  white_intro = vedit.Watermark( bgcolor='White', width=window.width, height=window.height, fade_out_start=0, fade_out_duration=3 )
+
+  # Let's fade the window out to black over 5 seconds from the end of the video.
+  black_outro = vedit.Watermark( bgcolor='Black', width=window.width, height=window.height, fade_in_start=-5, fade_in_duration=5 )
+
+  window.watermarks = [ watermark_image, white_intro, black_outro ]
+
+  window.render()
 
 Back to `Table of Contents`_
 
@@ -671,7 +828,16 @@ Back to `Table of Contents`_
 Audio
 --------------------------------------------------------------------------------
 
-Audio
+There are a few ways to manipulate the audio of the output:
+
+1. Each Clip can be configured to mix it's audio into the output by virtue of configuring it with a ``Display`` configuration with ``include_audio=True`` (the default).
+2. Alternatively, if the Clip has no such configuration, the Window it is in can have a ``Display`` configuration with ``include_audio=True``.
+3. Finally, each ``Window`` can have it's own audio track via the ``audio_file`` constructor argument.
+
+All ``Clip`` and ``Window`` who have audio present will see their audio mixed together in the output.
+
+Finally, for ``Window``\s with an ``audio_file`` argument only, if the audio file is longer than the ``duration`` of the window, the volume of that ``audio_file`` stream will fade out over the last 5 seconds of the ``Window``\'s duration.
+
 
 Back to `Table of Contents`_
 
@@ -725,7 +891,9 @@ Odds and Ends
 - The first video stream encountered in a file is the one used, the rest are ignored.
 - The first audio stream encountered in a file is the one used, the rest are ignored.
 - The output Sample Aspect Ratio (SAR) for a Window can be set.  All inputs and outputs are assumed to have the same SAR.  If not set the SAR of the Video input will be used, or 1:1 will be used if there is no Video input.
-- Some video files report strange Sample Aspect Ratio (SAR) via ``ffprobe``. The nonsense SAR value of 0:1 is assumed to be 1:1.  SAR ratios between 0.9 and 1.1 are assumed to be 1:1. 
+
+  - Some video files report strange Sample Aspect Ratio (SAR) via ``ffprobe``. The nonsense SAR value of 0:1 is assumed to be 1:1.  SAR ratios between 0.9 and 1.1 are assumed to be 1:1. 
+
 - The pixel format of the output can be set, the default is yuv420p.
 - The output video frame rate will be set to 30000/1001
 - The output will be encoded with the H.264 codec.

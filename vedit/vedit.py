@@ -459,9 +459,6 @@ class Window( object ):
       of their display argument).  Defaults to the default Display()
       object.
 
-    * force - Defaults to False, force regeneration of all video
-      content, ignoring what is in the cache.
-
     * bgcolor - Defaults to 'Black'.  In a variety of scenarios where
       there is no Clip or image content in a region of a Window, what
       color should that region be.
@@ -544,6 +541,8 @@ class Window( object ):
       may cause crashes and memory corruption errors, setting it lower
       increases rendering time.
 
+    * force - Defaults to False, force regeneration of all video
+      content, ignoring what is in the cache.
         
     NOTE: Window objects cache data both within and across program
     invocations.  Broadly this saves a ton of compute time by not
@@ -976,7 +975,7 @@ class Window( object ):
                 f = open( audio_desc_file, 'w' )
                 f.write( self.audio_desc )
                 f.close()
-                filter_clause = " -filter_complex 'drawtext=fontcolor=white:fontsize=24:borderw=1:textfile=%s:x=10:y=h-th-10:enable=gt(t\,%f)'%s" % ( audio_desc_file, self.duration - 5, sar_clause )
+                filter_clause = " -filter_complex 'drawtext=fontcolor=white:fontsize=24:borderw=1:textfile=%s:x=10:y=h-th-10:enable=gt(t\,%f)'%s" % ( audio_desc_file, max( 0, self.duration - 5 ), sar_clause )
 
             cmd = '%s -y -i %s -i %s -ac %d -pix_fmt %s %s %s -t %f %s' % ( FFMPEG, current, audio_tmpfile, audio_channels, self.pix_fmt, afade_clause, filter_clause, self.duration, tmpfile )
             log.info( "Running: %s" % ( cmd ) )
@@ -1023,8 +1022,8 @@ class Window( object ):
 
         for watermark in watermarks:
             if watermark.bgcolor is not None:
-                filter_idx += 1
-                cmd += ' color=%s:size=%dx%d [%d] ; ' % ( watermark.bgcolor, watermark.width, watermark.height, file_idx + filter_idx )
+                cmd += ' color=%s:size=%dx%d [b%d] ; ' % ( watermark.bgcolor, watermark.width, watermark.height, file_idx + filter_idx )
+            filter_idx += 1
 
         for idx, watermark in enumerate( watermarks ):
             fade_clause = ""
@@ -1033,7 +1032,7 @@ class Window( object ):
                 if in_start < 0:
                     in_start = self.duration + in_start
                 in_duration = min( watermark.fade_in_duration, self.duration - in_start )
-                fade_clause = "fade=in:st=%f:d=%f" % ( in_start, in_duration )
+                fade_clause = "fade=t=in:alpha=1:st=%f:d=%f" % ( in_start, in_duration )
             if watermark.fade_out_start is not None:
                 out_start = watermark.fade_out_start
                 if out_start < 0:
@@ -1043,7 +1042,7 @@ class Window( object ):
                     fade_clause = "fade="
                 else:
                     fade_clause += ":"
-                fade_clause += "out:st=%f:d=%f" % ( out_start, out_duration )
+                fade_clause += "t=out:alpha=1:st=%f:d=%f" % ( out_start, out_duration )
 
             mark_clause = fade_clause
             if mark_clause == "":
@@ -1051,9 +1050,9 @@ class Window( object ):
 
             input_idx = idx+1
             if watermark.filename is None:
-                input_idx += file_idx
-
-            cmd += " [%d] %s [w%d] ; " % ( input_idx, mark_clause, idx )
+                cmd += " [b%d] %s [w%d] ; " % ( input_idx + file_idx - 1, mark_clause, idx )
+            else:
+                cmd += " [%d] %s [w%d] ; " % ( input_idx, mark_clause, idx )
 
         # Overlay them onto one another
         prior_overlay = '0'
@@ -1162,25 +1161,30 @@ class Window( object ):
             else:
                 clip_files.append( filename )
         
-        # Concatenate all clip files.
-        if len( clip_files ) > 1:
-            concat_vid = self.get_next_renderfile()
-            concat_file = "%s/concat-%s.txt" % ( Window.tmpdir, str( uuid.uuid4() ) )
-            f = open( concat_file, 'w' )
-            for clip_file in clip_files:
-                f.write( "file '%s'\n" % ( clip_file ))
-            f.close()
+        # Handle the non-overlays.
+        if len( clip_files ):
+            if len( clip_files ) > 1:
+                # There is concatenation to be done.
+                concat_vid = self.get_next_renderfile()
+                concat_file = "%s/concat-%s.txt" % ( Window.tmpdir, str( uuid.uuid4() ) )
+                f = open( concat_file, 'w' )
+                for clip_file in clip_files:
+                    f.write( "file '%s'\n" % ( clip_file ))
+                f.close()
+                    
+                cmd = "%s -y -f concat -safe 0 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 -c:a libfdk_aac -ac %d %s" % ( FFMPEG, concat_file, self.pix_fmt, audio_channels, concat_vid )
 
-            cmd = "%s -y -f concat -safe 0 -i %s -pix_fmt %s -r 30000/1001 -crf 16 -c:v libx264 -c:a libfdk_aac -ac %d %s" % ( FFMPEG, concat_file, self.pix_fmt, audio_channels, concat_vid )
+                log.info( "Running: %s" % ( cmd ) )
+                ( status, output ) = subprocess.getstatusoutput( cmd )
+                log.debug( "Output was: %s" % ( output ) )
+                if status != 0 or not os.path.exists( concat_vid ):
+                    raise Exception( "Error producing concatenated file %s with command: %s\n\nOutput was: %s" % ( concat_vid, cmd, output ) )
 
-            log.info( "Running: %s" % ( cmd ) )
-            ( status, output ) = subprocess.getstatusoutput( cmd )
-            log.debug( "Output was: %s" % ( output ) )
-            if status != 0 or not os.path.exists( concat_vid ):
-                raise Exception( "Error producing concatenated file %s with command: %s\n\nOutput was: %s" % ( concat_vid, cmd, output ) )
-
-            background_video = Video( background_file )
-            overlay_video = Video( concat_vid )
+                overlay_video = Video( concat_vid )
+            else:
+                # There is just one non-overlay.
+                overlay_video = Video( clip_files[0] )
+                concat_vid = clip_files[0]
 
             audio_clause = ""
             if overlay_video.channels is None:
@@ -1197,8 +1201,6 @@ class Window( object ):
             log.debug( "Output was: %s" % ( output ) )
             if status != 0 or not os.path.exists( tmpfile ):
                 raise Exception( "Error producing concatenated clip file %s with command: %s\n\nOutput was: %s" % ( tmpfile, cmd, output ) )
-        elif len( clip_files ) == 1:
-            tmpfile = clip_files[0]
         else:
             tmpfile = background_file
 
@@ -1587,6 +1589,43 @@ class Window( object ):
 # ran across FFMPEG bugs (segmentation faults, memory corruption) when
 # using the FFMPEG scale filter on PNG images, so I left it out.
 class Watermark( object ):
+    '''A list of Watermark objects can be provided to a Window. 
+
+    Each Watermark is either an image, or a rectangle of a solid color.
+
+    Each watermark will be overlayed on the Window when it is rendered
+    in the order they are present in that Window's watermarks list.
+
+    If a watermark image is provided, it The is not scaled before
+    being placed on the Window, so you must ensure it is the
+    appropriate size.
+
+    If a image is not provided, then: bgcolor, width, and height must
+    be specified and will create a rectangle of that color and size as
+    the watermark (this can be used to fade a video to black, or fade
+    in from white for example).
+
+    The Watermark can be positioned with the x and y arguments, which
+    are passed to the ffmpeg overlay filter, so they can be simple
+    things like the pixel offset from the top left, or complicated
+    expressions like "main_w-overlay_w-10" to right justify the image,
+    or "trunc((main_h-overlay_h)/2)" to vertically center it.
+
+    By default the image is present for the whole video.
+
+    The apperance of the image can be set to:
+    
+    * Begin at fade_in_start
+    * End at fade_out_start
+
+    Negative values of fade_in_start/fade_out_start are interpreted as
+    offsets from the end of the video, rather than from the beginning.
+
+    The Watermark can be made to gradually fade in or out by setting
+    the fade_in_duration or fade_out_duration.
+
+    '''
+
     def __init__( self, 
                   filename = None,
                   x = "0",
@@ -1618,6 +1657,16 @@ class Watermark( object ):
         self.fade_in_duration = fade_in_duration
         self.fade_out_start = fade_out_start
         self.fade_out_duration = fade_out_duration
+
+        if self.fade_in_start is not None and self.fade_in_duration is None:
+            raise Exception( "If either of fade_in_start or fade_in_duration is set they must both be set." )
+        if self.fade_in_start is None and self.fade_in_duration is not None:
+            raise Exception( "If either of fade_in_start or fade_in_duration is set they must both be set." )
+        if self.fade_out_start is not None and self.fade_out_duration is None:
+            raise Exception( "If either of fade_out_start or fade_out_duration is set they must both be set." )
+        if self.fade_out_start is None and self.fade_out_duration is not None:
+            raise Exception( "If either of fade_out_start or fade_out_duration is set they must both be set." )
+
 
 
 
@@ -1664,10 +1713,13 @@ def distribute_clips( clips, windows, min_duration=None, randomize_clips=False )
     |  +-------------------------+             |
     |  | Window 2                |  +---------+|
     |  |                         |  | Window 3||
-    |  +-------------------------+  |         ||
-    |                               |         ||
-    |                               |         ||
-    |                               +---------+|
+    |  |               +------------|         ||
+    |  +---------------| Window 4   |         ||
+    |                  |            |         ||
+    |                  | +---------+|         ||
+    |                  | | Window 5|+---------+|
+    |                  | +---------+  |        |
+    |                  +--------------+        |
     +------------------------------------------+
 
     And clips will be distributed among them.
