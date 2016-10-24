@@ -13,12 +13,6 @@ Contents:
 
    readme
 
-Examples
-========
-
-.. automodule:: examples
-
-
 Indices and tables
 ==================
 

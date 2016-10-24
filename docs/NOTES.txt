@@ -1,0 +1,11 @@
+Basic setup from here:
+
+https://samnicholls.net/2016/06/15/how-to-sphinx-readthedocs/
+
+Commands to run:
+
+One time:
+sphinx-apidoc -o source ../vedit
+
+Validate build:
+make html
