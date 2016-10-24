@@ -31,10 +31,11 @@ Assuming you have ``pip`` installed:
 
     pip install vedit
 
-However, there is nothing in the package that is special, and no
-Python dependencies other than a Python 2.7 interpreter with the
-standard library, you can just download from the project GitHub
-repository and put the ``vedit`` directory in your Python path.
+However, there is nothing in the package that is special.  The only
+dependencies are the ``future`` module and a Python 2.7 or later
+(including Python 3) interpreter. You can just download from the
+project GitHub repository and put the ``vedit`` directory in your
+Python path of an interpreter that also has ``future`` installed.
 
 ----
 

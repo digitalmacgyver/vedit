@@ -168,14 +168,16 @@ class Display( object ):
 
     Whenever a Clip is rendered, it is rendered with the following
     Display settings:
-    * If the Clip itself has a Display object, those settings are used.
-    * Otherwise, if the Window the Clip is being rendered in has a
+
+    - If the Clip itself has a Display object, those settings are used.
+    - Otherwise, if the Window the Clip is being rendered in has a
       Display object, those settings are used.
-    * Otherwise, the default Display settings are used.
+    - Otherwise, the default Display settings are used.
 
     The default Display settings are:
-    * display_style = PAD
-    * pad_bgcolor = 'Black'
+
+    - display_style = PAD
+    - pad_bgcolor = 'Black'
 
     The display_style may be set to one of CROP, PAD, PAN, or OVERLAY.
 
@@ -188,15 +190,13 @@ class Display( object ):
 
     If display_style is OVERLAY:
 
-    * overlay_direction can be one of LEFT/RIGHT/UP/DOWN and the
+    - overlay_direction can be one of LEFT/RIGHT/UP/DOWN and the
       overlay_concurrency may be set.  overlay_concurrency is roughly
       how many clips can be on the screen at the same time during
       overlays.  Defaults to DOWN.
-
-    * overlay_concurrency lists the maximum number of clips that can
+    - overlay_concurrency lists the maximum number of clips that can
       be actively cascading at one time.  Defaults to 3.
-
-    * overlay_min_gap lists the minimum duration between when two
+    - overlay_min_gap lists the minimum duration between when two
       clips may be started to animate. Defaults to 4 seconds.
 
     If include_audio is set to true the audio from this clip will be
@@ -370,12 +370,13 @@ class Clip( object ):
     by a Video object.
 
     Inputs:
-    * video - a Video object
-    * start - Defaults to 0, the time in seconds this clip begins in
+
+    - video - a Video object
+    - start - Defaults to 0, the time in seconds this clip begins in
       the source Video
-    * end - If specified, the time in seconds this clip ends in the
+    - end - If specified, the time in seconds this clip ends in the
       source Video, defaults to the end of the Video
-    * display - If specified, the Display settings this clip should be
+    - display - If specified, the Display settings this clip should be
       rendered with.  If not specified this clip will fall back to the
       default Display settings of the Window it is being rendered in.
 
@@ -445,47 +446,36 @@ class Window( object ):
 
     Constructor arguments:
 
-    * windows - Optional list of other Window objects which are
+    - windows - Optional list of other Window objects which are
       children to this Window (may be manipulated after construction
       by explicitly settings the .windows attribute on the returned
       object).
-
-    * clips - Option list of Clip objects to be rendered in this
+    - clips - Option list of Clip objects to be rendered in this
       Window (may be manipulated after construction by explicitly
       setting the .clips attribute of the returned object).
-
-    * display - An optional Display object to define how Clips should
+    - display - An optional Display object to define how Clips should
       be rendered in this window (overridden on a Clip by Clip basis
       of their display argument).  Defaults to the default Display()
       object.
-
-    * bgcolor - Defaults to 'Black'.  In a variety of scenarios where
+    - bgcolor - Defaults to 'Black'.  In a variety of scenarios where
       there is no Clip or image content in a region of a Window, what
       color should that region be.
-
-    * bgimage_file - Defaults to None.  In a variety of scenarios
+    - bgimage_file - Defaults to None.  In a variety of scenarios
       where there are no Clips content in a region of the Window, what
       should be shown instead.
-
-    * width - Defaults to 1280.  Width in pixels of this Window.
-
-    * height - Defaults to 720.  Height in pixels of this Window.
-
-    * x - Defaults to 0.  The x coordinate of the top left pixel of
+    - width - Defaults to 1280.  Width in pixels of this Window.
+    - height - Defaults to 720.  Height in pixels of this Window.
+    - x - Defaults to 0.  The x coordinate of the top left pixel of
       this Window within its immediate parent Window, if any, as
       measured from the top left.
-
-    * y - Defaults to 0.  The y coordinate of the top left pixel of
+    - y - Defaults to 0.  The y coordinate of the top left pixel of
       this Window within its immediate parent Window, if any, as
       measured from the top left.
-
-    * audio_file. Optional.  If specified, an audio track to play
+    - audio_file. Optional.  If specified, an audio track to play
       along with the resultant video.
-
-    * audio_desc.  Optional.  If provided, text to display over the
+    - audio_desc.  Optional.  If provided, text to display over the
       end of the video for the last 5 seconds.
-
-    * duration - Optional. If specified the duration of the rendered
+    - duration - Optional. If specified the duration of the rendered
       content of this Window.  
   
       Defaults to the length of the optional audio_file, or if
@@ -495,10 +485,10 @@ class Window( object ):
       The duration of a given set of clips is calculated as the larger
       of:
 
-      + Either, the length of all non-OVERLAY clips concatenated
+      - Either, the length of all non-OVERLAY clips concatenated
         together
 
-      + Or the length of the display time of all OVERLAY clips given
+      - Or the length of the display time of all OVERLAY clips given
         their various staggered start times depending on the number of
         clips, their overlay concurrency, their durations, etc.
 
@@ -510,19 +500,16 @@ class Window( object ):
       the audio file will fade out starting 5 seconds before the end
       of the video.
 
-    * output_file - Defaults to "./output.mp4" where the resulting
+    - output_file - Defaults to "./output.mp4" where the resulting
       video from a call to render this Window will be created.
-
-    * z_index - Optional.  If there are multiple windows being
+    - z_index - Optional.  If there are multiple windows being
       rendered, ones with higher z_indexes are rendered on top of
       others.  If two windows have the same z_index which one ends up
       on top is arbitrary.  If not specified windows will have
       increasing z_index in order of creation.
-
-    * watermarks - Optional.  A list of Watermark image objects to
+    - watermarks - Optional.  A list of Watermark image objects to
       overlay on top of the resultant video.
-
-    * sample_aspect_ratio - Optional. The Sample Aspect Ratio (SAR)
+    - sample_aspect_ratio - Optional. The Sample Aspect Ratio (SAR)
       for the rendered content of this Window.  If specified, it must
       be in "W:H" format.  This should not be needed generally unless
       you are encoding for TV broadcast or similar.  Defaults to the
@@ -530,18 +517,15 @@ class Window( object ):
       multiple input videos have different SARs an Exception is
       thrown, you must preprocess your inputs to all have the same
       SAR.
-
-    * pix_fmt - Optional.  The pixel format of this window, defaults
+    - pix_fmt - Optional.  The pixel format of this window, defaults
       to yuv420p.  All Windows that are rendered together must have
       the same pix_fmt.
-
-    * overlay_batch_concurrency - Optional.  Defaults to 16.  An
+    - overlay_batch_concurrency - Optional.  Defaults to 16.  An
       internal parameter that controls how many overlays we will
       attempt in one command line for FFMPEG.  Increasing this value
       may cause crashes and memory corruption errors, setting it lower
       increases rendering time.
-
-    * force - Defaults to False, force regeneration of all video
+    - force - Defaults to False, force regeneration of all video
       content, ignoring what is in the cache.
         
     NOTE: Window objects cache data both within and across program
@@ -551,15 +535,16 @@ class Window( object ):
     
     If two Clips have the same elements here, they are assumed to be
     the same in the Cache:
-    * Absolute path to the filename from the underlying Video object
-    * Clip start time
-    * Clip end time
-    * The display_style of the Clip as being rendered in this Window.
-    * Clip width
-    * Clip height
-    * Window pan_direction (only relevant if display_style is PAN and
+
+    - Absolute path to the filename from the underlying Video object
+    - Clip start time
+    - Clip end time
+    - The display_style of the Clip as being rendered in this Window.
+    - Clip width
+    - Clip height
+    - Window pan_direction (only relevant if display_style is PAN and
       pan_direction is ALTERNATE)
-    * The pixel format of this Window
+    - The pixel format of this Window
 
     If the Cache is incorrect (most likely because the underlying
     contents of an input filename have changed), the cache should be
@@ -1684,15 +1669,15 @@ def distribute_clips( clips, windows, min_duration=None, randomize_clips=False )
 
     Input/Output parameters: 
 
-    * windows - A list of vsum.Window objects to distribute the clips
+    - windows - A list of vsum.Window objects to distribute the clips
       among.  These Window objects are modified by having whatever
       clips this function determines to send to them added to the end
       of their clips list.
 
     Inputs:
-    * clips - A list of vsum.Clip objects to distribute
 
-    * min_duration - If set to a numeric value the clips will be
+    - clips - A list of vsum.Clip objects to distribute
+    - min_duration - If set to a numeric value the clips will be
       repeated over and over until the desired min_duration is met.
       Otherwise each clip is shown once and the resulting duration is
       a function of the resulting length within each window.
@@ -1701,26 +1686,26 @@ def distribute_clips( clips, windows, min_duration=None, randomize_clips=False )
     will be added to the result, and some input clips may be unused
     in that scenario.
 
-    * randomize_clips - If true the input clips array will have it's
+    - randomize_clips - If true the input clips array will have it's
       contents randomized prior to being distributed, otherwise the
       resulting clips will be shown in order.
 
     The main idea is that a set of "windows" will be defined, such as
-    this:
+    this: ::
 
-    +------------------------------------------+
-    |                  Window 1                |
-    |  +-------------------------+             |
-    |  | Window 2                |  +---------+|
-    |  |                         |  | Window 3||
-    |  |               +------------|         ||
-    |  +---------------| Window 4   |         ||
-    |                  |            |         ||
-    |                  | +---------+|         ||
-    |                  | | Window 5|+---------+|
-    |                  | +---------+  |        |
-    |                  +--------------+        |
-    +------------------------------------------+
+      +------------------------------------------+
+      |                  Window 1                |
+      |  +-------------------------+             |
+      |  | Window 2                |  +---------+|
+      |  |                         |  | Window 3||
+      |  |               +------------|         ||
+      |  +---------------| Window 4   |         ||
+      |                  |            |         ||
+      |                  | +---------+|         ||
+      |                  | | Window 5|+---------+|
+      |                  | +---------+  |        |
+      |                  +--------------+        |
+      +------------------------------------------+
 
     And clips will be distributed among them.
 
@@ -1739,9 +1724,10 @@ def distribute_clips( clips, windows, min_duration=None, randomize_clips=False )
 
     2. Then, we walk down this prioritized list and place this clip in
     the first window such that both:
-        * ( window_duration + clip_duration ) <= 1.2*( minimum_window_duration + clip_duration )
-        * and, if min_duration is set:
-        * window_duration < min_duration
+
+       - ( window_duration + clip_duration ) <= 1.2*( minimum_window_duration + clip_duration )
+       - and, if min_duration is set:
+       - window_duration < min_duration
 
     '''
 
@@ -1815,14 +1801,15 @@ def gen_background_video( duration,
     '''Create a video file of the desired properties.
 
     Inputs:
-    * duration - Time in seconds of the video
-    * width / height - Width / height in pixels of the video - these
+
+    - duration - Time in seconds of the video
+    - width / height - Width / height in pixels of the video - these
       are overridden if bgimage_file is provided.
-    * bgcolor - The background color of the video
-    * bgimage_file - Optional, if specified the video should consist
+    - bgcolor - The background color of the video
+    - bgimage_file - Optional, if specified the video should consist
       of this image rather than a solid color, if specified the
       dimensions of the image determine the width and height.
-    * output_file - If specified, the resulting file will be copied to
+    - output_file - If specified, the resulting file will be copied to
       this location.
 
     Outputs: Returns a string denoting the filesystem path where the
