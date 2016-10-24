@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 2
 
    readme
+   .. automodule:: examples
 
 
 Indices and tables
